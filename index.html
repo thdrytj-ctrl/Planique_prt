@@ -277,6 +277,7 @@ const PATCH_NOTES = [
   { ver:"2.3.1", date:"2026-11-17", items:[
     "핸드폰 홈 화면에 앱으로 설치 가능 (안드로이드: 메뉴 > 앱 설치, 아이폰: 공유 > 홈 화면에 추가)",
     "앱을 내리거나 다른 앱으로 넘어갈 때 고치던 내용을 바로 클라우드에 저장",
+    "좁은 화면(폴드 등)에서 표의 '학습 내용' 칸이 사라지고 글자가 겹치던 문제 수정 — 넘치면 표를 옆으로 밀어서 봄",
   ]},
   { ver:"2.3.0", date:"2026-11-17", items:[
     "Firebase(Firestore) 실시간 동기화: 고칠 때마다 클라우드에 저장, 다른 기기에서 바뀐 내용 바로 반영",
@@ -869,7 +870,9 @@ class Grid{
     this.data = o.rows(); this.n = this.data.length + (o.add ? 1 : 0);
     const cl = (v,max) => Math.max(0, Math.min(max, v));
     this.r = cl(this.r,this.n-1); this.ar = cl(this.ar,this.n-1); this.c = cl(this.c,cols.length-1); this.ac = cl(this.ac,cols.length-1);
-    let h = `<table class="grid"><colgroup>${cols.map(c => `<col${c.w ? ` style="width:${c.w}px"` : ""}>`).join("")}</colgroup><thead><tr>${cols.map((c,j) => `<th class="${c.al||""}${c.head ? " hd" : ""}" data-h="${j}" title="${esc(c.tip||c.label)}">${esc(c.label)}</th>`).join("")}</tr></thead><tbody>`;
+    // 화면이 좁아도 폭이 정해지지 않은 칸(학습 내용 등)이 0이 되지 않게 표 최소 폭을 둠 → 넘치면 표 안에서 옆으로 스크롤
+    const minW = cols.reduce((s,c) => s + (c.w || 120), 0);
+    let h = `<table class="grid" style="min-width:${minW}px"><colgroup>${cols.map(c => `<col${c.w ? ` style="width:${c.w}px"` : ""}>`).join("")}</colgroup><thead><tr>${cols.map((c,j) => `<th class="${c.al||""}${c.head ? " hd" : ""}" data-h="${j}" title="${esc(c.tip||c.label)}">${esc(c.label)}</th>`).join("")}</tr></thead><tbody>`;
     for(let i = 0; i < this.n; i++){
       const row = this.data[i];
       h += `<tr class="${row && o.rowCls ? o.rowCls(row,i) : ""}">`;
