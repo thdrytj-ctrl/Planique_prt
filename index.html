@@ -109,6 +109,7 @@ table.grid{border-collapse:separate;border-spacing:0;width:100%;table-layout:fix
 .grid tr.done td.p-hi,.grid tr.done td.p-mid,.grid tr.done td.p-lo{background:var(--panel);color:var(--faint);font-weight:400}
 .grid td.as,.grid tr.today td.as{background:var(--red-w);color:#7c2a1c}
 .grid td.as.ov{box-shadow:inset 2px 0 0 #c9d8cf}
+.grid td.as.asx,.grid tr.today td.as.asx{background:#efb5a9;color:#5c1d12;font-weight:600}
 .grid td.sel.late,.grid td.sel.soon,.grid td.sel.p-hi,.grid td.sel.p-mid,.grid td.sel.p-lo,.grid td.sel.as{filter:brightness(.95)}
 .grid th.hd{cursor:pointer}
 .grid th.hd:hover{background:#e6e3db;color:var(--ink)}
@@ -213,9 +214,17 @@ textarea.memo:focus{border-color:var(--acc)}
 .mini tr:last-child td{border-bottom:0;font-weight:700}
 .mini td.neg{color:var(--red)}.mini td.pos{color:var(--blue)}.mini td.ok{color:var(--acc)}
 .notes{font-size:13px}
-.notes h4{margin:12px 0 4px;font-size:13.5px}
-.notes h4 span{font-weight:500;color:var(--faint);font-size:12px;margin-left:6px}
-.notes ul{margin:0;padding-left:18px;color:#4d4942}
+.notes details{border-bottom:1px solid var(--line)}
+.notes details:last-child{border-bottom:0}
+.notes summary{cursor:pointer;padding:7px 2px;display:flex;align-items:baseline;gap:8px;list-style:none;font-size:13.5px}
+.notes summary::-webkit-details-marker{display:none}
+.notes summary::before{content:"›";color:var(--faint);display:inline-block;width:10px;transition:transform .12s}
+.notes details[open] summary::before{transform:rotate(90deg)}
+.notes summary:hover b{color:var(--acc)}
+.notes summary span{font-weight:500;color:var(--faint);font-size:12px}
+.notes summary i{margin-left:auto;font-style:normal;color:var(--faint);font-size:11.5px}
+.notes summary i::after{content:"개"}
+.notes ul{margin:0 0 10px;padding-left:36px;color:#4d4942}
 .cal-col,.side{min-width:0}
 .top .undo{white-space:nowrap;flex:none}
 
@@ -231,7 +240,11 @@ textarea.memo:focus{border-color:var(--acc)}
 .ev-f input,.ev-f select,.eq input,.eq select,.ev-info input{font:inherit;font-size:13px;padding:4px 7px;border:1px solid var(--line2);border-radius:5px;background:var(--panel);color:var(--ink);min-width:0}
 .ev-f input[type=number]{width:64px}
 .eq input[type=number]{width:74px}
-.eq{padding:11px 0;border-bottom:1px solid var(--line)}
+.eq{padding:11px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,.62fr);gap:14px;align-items:stretch}
+.eq-main{min-width:0}
+.eq-memo{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--faint);font-weight:600}
+.eq-memo textarea.memo{flex:1;min-height:58px;font-size:12.5px;padding:6px 8px}
+@media (max-width:640px){ .eq{grid-template-columns:1fr;gap:8px} }
 .eq:first-of-type{padding-top:0}
 .eq:last-child{border-bottom:0;padding-bottom:0}
 .eq-h{display:flex;align-items:baseline;gap:10px}
@@ -327,10 +340,16 @@ textarea.memo:focus{border-color:var(--acc)}
    데이터는 이 브라우저(localStorage)에 먼저 저장되고,
    Firebase(Firestore) appState/planique2 문서에 동기화됩니다 (맨 아래 module 스크립트).
    ============================================================ */
-const APP_VERSION = "2.5.0";
+const APP_VERSION = "2.6.0";
 // 버전을 올릴 때 여기에 한 묶음 추가하면 설정 > 패치 노트에 자동으로 나타나고,
 // 이 기기에서 처음 실행된 날짜가 함께 기록됩니다.
 const PATCH_NOTES = [
+  { ver:"2.6.0", date:"2026-11-18", items:[
+    "운영 계획 화면 추가 (시트 '운영 계획' 탭): 계획 시작일부터 날짜·요일·주차·담당·교시별 진도와 그날 행사, 옆에 시수 점검",
+    "운영 계획: 대체교사 기간에 잡힌 평가는 빨간 칸으로 표시",
+    "설정 > 패치 노트: 버전을 눌러야 내용이 열리도록 접어 둠",
+    "다면평가: 정량 점수 항목 폭을 줄이고 항목마다 비고 칸 추가 (정량 실적 복사에도 포함)",
+  ]},
   { ver:"2.5.0", date:"2026-11-17", items:[
     "학급운영비(개산급) 화면 추가: 수령액·사용액·잔액(초과는 빨강)·증빙 종류별 합계",
     "구입 내역 표: 금액(수량×단가)·합계(+배송비) 자동 계산, 엑셀 집계표를 머리글째 붙여넣으면 열 이름에 맞춰 들어감",
@@ -781,7 +800,7 @@ function seedState(){
 
 /* ---------- 상태 · 저장 · 되돌리기 ---------- */
 let S;
-const ui = { page:"home", month:new Date(pd(TODAY).getFullYear(), pd(TODAY).getMonth(), 1), sel:TODAY, day:TODAY, ttMonth:TODAY.slice(0,7), planMonth:"next", lessonAbbr:"국" };
+const ui = { page:"home", month:new Date(pd(TODAY).getFullYear(), pd(TODAY).getMonth(), 1), sel:TODAY, day:TODAY, ttMonth:TODAY.slice(0,7), planMonth:"next", opsMonth:"all", lessonAbbr:"국" };
 const undoStack = [];
 let cache = null;
 function load(){
@@ -1154,14 +1173,14 @@ document.addEventListener("keydown", e => { if((e.ctrlKey || e.metaKey) && (e.ke
 /* ============================================================
    화면
    ============================================================ */
-const PAGES = [["home","홈"],["tt","시간표"],["lessons","차시 목록"],["plan","진도"],["hours","시수"],["todo","할 일"],["events","일정"],["students","학생"],["training","컨설팅·연수"],["budget","학급운영비"],["eval","다면평가"],["settings","설정"]];
+const PAGES = [["home","홈"],["tt","시간표"],["lessons","차시 목록"],["plan","진도"],["ops","운영 계획"],["hours","시수"],["todo","할 일"],["events","일정"],["students","학생"],["training","컨설팅·연수"],["budget","학급운영비"],["eval","다면평가"],["settings","설정"]];
 function go(page, extra){ Object.assign(ui, extra || {}); ui.page = page; activeGridId = null; render(); scrollTo(0,0); }
 function openDay(d){ go("day", { day:d }); }
 function render(){
   cache = null;
   for(const k in grids) delete grids[k];
   $("#nav").innerHTML = PAGES.map(([id,label]) => `<button data-p="${id}" class="${ui.page === id || (id === "home" && ui.page === "day") || (id === "students" && ui.page === "student") ? "on" : ""}">${label}</button>`).join("");
-  ({ home:pgHome, day:pgDay, tt:pgTT, lessons:pgLessons, plan:pgPlan, hours:pgHours, todo:pgTodo, events:pgEvents, students:pgStudents, student:pgStudent, training:pgTraining, budget:pgBudget, eval:pgEval, settings:pgSettings })[ui.page]();
+  ({ home:pgHome, day:pgDay, tt:pgTT, lessons:pgLessons, plan:pgPlan, ops:pgOps, hours:pgHours, todo:pgTodo, events:pgEvents, students:pgStudents, student:pgStudent, training:pgTraining, budget:pgBudget, eval:pgEval, settings:pgSettings })[ui.page]();
 }
 $("#nav").onclick = e => { const b = e.target.closest("button"); if(b) go(b.dataset.p); };
 $("#undoBtn").onclick = undo;
@@ -1394,6 +1413,36 @@ function pgPlan(){
     ${rows.length ? `<div id="g-plan"></div>` : `<div class="panel"><div class="empty">이 기간에 입력된 시간표가 없습니다. 시간표에 과목을 먼저 넣어 주세요.</div></div>`}`;
   $("#mtabs").onclick = e => { const b = e.target.closest("button"); if(b){ ui.planMonth = b.dataset.k; delete gridSel.plan; delete gridScroll.plan; render(); } };
   if(rows.length) new Grid($("#g-plan"), { id:"plan", maxH:Math.max(320, innerHeight-200), rows:() => rows, rowCls:r => [r.first ? "daystart" : "", r.date === TODAY ? "today" : ""].join(" "), cols:progCols(true) });
+}
+
+/* ----- 운영 계획 (시트 '운영 계획' 탭: 계획 시작일부터 모든 교시) ----- */
+function pgOps(){
+  const c = C(), start = S.set.planStart;
+  const months = monthsOfTerm().filter(k => k >= start.slice(0,7));
+  if(ui.opsMonth !== "all" && !months.includes(ui.opsMonth)) ui.opsMonth = "all";
+  const days = c.days.filter(d => d >= start && (ui.opsMonth === "all" || d.startsWith(ui.opsMonth)));
+  const rows = days.flatMap(d => Array.from({ length:NP }, (_,i) => ({ date:d, p:i+1, first:i === 0 })));
+  // 빨간 평가 칸: 대체교사 기간이거나 대체교사 시작일 이후에 잡힌 평가
+  const late = d => !!S.set.subStart && d >= S.set.subStart;
+  const lateN = c.rows.filter(r => r.date >= start && late(r.date) && progGet(r.date,r.p,"assess")).length;
+  V().innerHTML = `<div class="page-head"><h1>운영 계획</h1><span class="desc">${md(start)}부터 남은 수업 운영 계획 · 시간표에 과목(약어)을 넣으면 다음 차시가 따라옵니다. 차시 순서·내용은 '차시 목록'에서 고치세요.</span></div>
+    <div class="tabs" id="mtabs">${[["all","전체"], ...months.map(k => [k, +k.slice(5) + "월"])].map(([k,l]) => `<button data-k="${k}" class="${ui.opsMonth === k ? "on" : ""}">${l}</button>`).join("")}</div>
+    <div class="two"><div>${rows.length ? `<div id="g-ops"></div>` : `<div class="panel"><div class="empty">이 기간에 수업일이 없습니다.</div></div>`}
+      <p class="hint"><span style="color:var(--red);font-weight:600">빨간 평가 칸</span> = 대체교사 기간(${md(S.set.subStart)} 이후)에 잡힌 평가${lateN ? ` — 지금 ${lateN}건, 앞으로 옮겨야 합니다` : " — 지금은 없습니다"}. 칸을 직접 고치면 그 시간만 따로 기록됩니다.</p></div>
+    <div class="panel"><h2>시수 점검 <button class="more" id="toHours">자세히</button></h2>${miniHours()}<p class="hint">0이면 딱 맞음 · −면 시간표에 더 넣어야 함</p></div></div>`;
+  $("#mtabs").onclick = e => { const b = e.target.closest("button"); if(b){ ui.opsMonth = b.dataset.k; delete gridSel.ops; delete gridScroll.ops; render(); } };
+  $("#toHours").onclick = () => go("hours");
+  if(!rows.length) return;
+  const cols = progCols(false).map(col => col.label !== "평가" ? col : { ...col, cls:(r,v) => (v ? (late(r.date) ? "as asx " : "as ") : "") + (progOv(r.date,r.p,"assess") ? "ov" : "") });
+  const ro = (label,w,get,al) => ({ label, w, type:"ro", al, get });
+  new Grid($("#g-ops"), { id:"ops", maxH:Math.max(320, innerHeight-220), rows:() => rows,
+    rowCls:r => [r.first ? "daystart" : "", r.date === TODAY ? "today" : "", isSubst(r.date) ? "subst" : ""].join(" "),
+    cols:[
+      ro("날짜",52,r => r.first ? md(r.date) : ""), ro("요일",40,r => r.first ? DOW[pd(r.date).getDay()] : "","c"),
+      ro("주차",54,r => r.first ? weekNo(r.date)+"주차" : "","c"), ro("담당",64,r => r.first ? (isSubst(r.date) ? "대체교사" : "담임") : "","c"),
+      ...cols,
+      ro("그날 행사",170,r => r.first ? eventsOn(r.date).map(e => e.title).join(" / ") : ""),
+    ]});
 }
 
 /* ----- 시수 ----- */
@@ -1797,12 +1846,14 @@ function evItemHTML(it, d){
   }
   if(it.prorate && it.base != null && d.months !== 12) st += `<div class="eq-n">기준 ${it.base}점 × 근무 ${d.months}개월/12 = ${fmtPt(it.score)}점</div>`;
   const cls = it.score == null ? "none" : it.base >= it.max ? "full" : "";
-  return `<div class="eq">
+  return `<div class="eq"><div class="eq-main">
     <div class="eq-h"><b>${esc(it.label)}</b><span class="eq-s ${cls}">${it.score == null ? "입력 전" : fmtPt(it.score)}<small>/ ${it.max}</small></span></div>
     <div class="eq-c">${esc(it.crit)}${it.prorate ? " · 근무개월 비례" : ""}</div>
     <div class="eq-in">${ctl}</div>${st}
     ${it.note ? `<div class="eq-n">※ ${esc(it.note)}</div>` : ""}
     ${it.kind === "count" ? `<details><summary>셈한 기록 ${it.list.length}건 — ${esc(it.src)}</summary>${it.list.length ? `<ul>${it.list.map(r => `<li>${esc(it.li(r))}</li>`).join("")}</ul>` : `<div class="eq-n">평가 기간 안의 기록이 없습니다.</div>`}</details>` : ""}
+    </div>
+    <label class="eq-memo"><span>비고</span><textarea class="memo" data-k="memo.${esc(it.id)}" placeholder="증빙·날짜·확인할 것 등">${esc((e.memo || {})[it.id] || "")}</textarea></label>
   </div>`;
 }
 
@@ -1817,6 +1868,7 @@ function evText(d, which){
         let v = it.val == null ? "(입력 전)" : it.kind === "sel" ? (it.opts.find(o => o[0] === it.val) || [,""])[1] : it.val + it.unit;
         if(it.kind === "count" && it.list.length) v += ` — ${it.list.map(it.li).join(", ")}`;
         L.push(`  ${it.label}: ${v} → ${fmtPt(it.score)}점`);
+        const m = ((e.memo || {})[it.id] || "").trim(); if(m) L.push(`    비고: ${m.replace(/\n/g, " / ")}`);
       });
     });
     L.push("", `총점: ${fmtPt(d.total)}점 / 100${d.missing ? ` (입력 전 ${d.missing}개 항목)` : ""}`);
@@ -1916,7 +1968,7 @@ function pgSettings(){
       </form>
       <p class="hint">PIN은 숫자 6~12자리입니다. 길수록 안전합니다. 브라우저를 닫거나 30분 동안 쓰지 않으면 다시 PIN을 물어봅니다.</p></div>
     <div class="panel"><h2>휴업일 (공휴일·재량휴업일)</h2><div id="g-hol"></div></div>
-    <div class="panel"><h2>패치 노트</h2><div class="notes">${PATCH_NOTES.map(n => { const v = S.meta.versions.find(x => x.ver === n.ver); return `<h4>${n.ver}<span>${n.date}${v ? ` · 이 기기 첫 실행 ${v.firstRun}` : ""}</span></h4><ul>${n.items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>`; }).join("")}</div></div>
+    <div class="panel"><h2>패치 노트</h2><div class="notes">${PATCH_NOTES.map(n => { const v = S.meta.versions.find(x => x.ver === n.ver); return `<details><summary><b>${n.ver}</b><span>${n.date}${v ? ` · 이 기기 첫 실행 ${v.firstRun}` : ""}</span><i>${n.items.length}</i></summary><ul>${n.items.map(i => `<li>${esc(i)}</li>`).join("")}</ul></details>`; }).join("")}</div><p class="hint">버전을 누르면 바뀐 내용이 열립니다.</p></div>
   </div>`;
   new Grid($("#g-set"), { id:"set", rows:() => items, cols:[ { label:"항목", type:"ro", get:r => r.label }, { label:"날짜", w:110, type:"date", get:r => S.set[r.key], set:(r,v) => { if(v) S.set[r.key] = v; } } ]});
   new Grid($("#g-hol"), { id:"hol", ...src(S.holidays, () => ({ date:"", name:"" })), cols:[ { key:"date", label:"날짜", w:100, type:"date" }, { key:"name", label:"이름" } ]});
