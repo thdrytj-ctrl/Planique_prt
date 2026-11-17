@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Planique</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='5' width='26' height='24' rx='4' fill='%232e5e4e'/%3E%3Crect x='3' y='5' width='26' height='7' rx='4' fill='%23234a3d'/%3E%3Cpath d='M10 20.5l4 4 8-9' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<!-- PWA: 홈 화면에 앱으로 설치 -->
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#ffffff" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Planique" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <style>
 :root{
@@ -262,10 +270,14 @@ textarea.memo:focus{border-color:var(--acc)}
    데이터는 이 브라우저(localStorage)에 먼저 저장되고,
    Firebase(Firestore) appState/planique2 문서에 동기화됩니다 (맨 아래 module 스크립트).
    ============================================================ */
-const APP_VERSION = "2.3.0";
+const APP_VERSION = "2.3.1";
 // 버전을 올릴 때 여기에 한 묶음 추가하면 설정 > 패치 노트에 자동으로 나타나고,
 // 이 기기에서 처음 실행된 날짜가 함께 기록됩니다.
 const PATCH_NOTES = [
+  { ver:"2.3.1", date:"2026-11-17", items:[
+    "핸드폰 홈 화면에 앱으로 설치 가능 (안드로이드: 메뉴 > 앱 설치, 아이폰: 공유 > 홈 화면에 추가)",
+    "앱을 내리거나 다른 앱으로 넘어갈 때 고치던 내용을 바로 클라우드에 저장",
+  ]},
   { ver:"2.3.0", date:"2026-11-17", items:[
     "Firebase(Firestore) 실시간 동기화: 고칠 때마다 클라우드에 저장, 다른 기기에서 바뀐 내용 바로 반영",
     "Planique 1.x 클라우드 자료(appState/main)는 그대로 두고 2.0 자료는 따로 저장 (appState/planique2)",
@@ -1552,6 +1564,13 @@ $("#verTag").textContent = APP_VERSION;
 render();
 </script>
 
+<!-- PWA: 서비스 워커 등록 (sw.js는 index.html과 같은 폴더에 있어야 함) -->
+<script>
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  addEventListener("load", () => { navigator.serviceWorker.register("./sw.js").catch(e => console.warn("서비스 워커 등록 실패", e)); });
+}
+</script>
+
 <!-- Firebase: PIN 잠금(Authentication) + 실시간 동기화(Firestore) -->
 <script type="module">
 /* ============================================================
@@ -1722,6 +1741,8 @@ window.PlaniqueCloud = {
   },
 };
 window.addEventListener("beforeunload", () => { if (pending != null) flush(); });
+// 핸드폰(설치형 앱)은 닫을 때 beforeunload가 오지 않는 경우가 많음 → 화면을 내릴 때 바로 저장
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && pending != null) flush(); });
 
 async function startSync() {
   setStatus("연결 중…", "Firestore 연결 중…");
