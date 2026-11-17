@@ -218,6 +218,63 @@ textarea.memo:focus{border-color:var(--acc)}
 .notes ul{margin:0;padding-left:18px;color:#4d4942}
 .cal-col,.side{min-width:0}
 .top .undo{white-space:nowrap;flex:none}
+
+/* 다면평가 */
+.ev-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.ev-col{display:grid;gap:14px;min-width:0}
+.ev-sum{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center}
+.ev-sum .tot{font-size:30px;font-weight:700;letter-spacing:-.03em;color:var(--acc);line-height:1}
+.ev-sum .tot small{font-size:14px;color:var(--faint);font-weight:500;margin-left:3px}
+.ev-sum .areas{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--mute)}
+.ev-sum .areas b{display:block;font-size:15px;color:var(--ink)}
+.ev-f{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mute);flex-wrap:wrap}
+.ev-f input,.ev-f select,.eq input,.eq select,.ev-info input{font:inherit;font-size:13px;padding:4px 7px;border:1px solid var(--line2);border-radius:5px;background:var(--panel);color:var(--ink);min-width:0}
+.ev-f input[type=number]{width:64px}
+.eq input[type=number]{width:74px}
+.eq{padding:11px 0;border-bottom:1px solid var(--line)}
+.eq:first-of-type{padding-top:0}
+.eq:last-child{border-bottom:0;padding-bottom:0}
+.eq-h{display:flex;align-items:baseline;gap:10px}
+.eq-h b{font-size:13.5px}
+.eq-s{margin-left:auto;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.eq-s small{font-size:11.5px;color:var(--faint);font-weight:500;margin-left:2px}
+.eq-s.full{color:var(--acc)}
+.eq-s.none{color:var(--faint);font-weight:500;font-size:13px}
+.eq-c{font-size:12px;color:var(--mute);margin:2px 0 7px}
+.eq-in{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px}
+.eq-in .more{border:0;background:none;color:var(--acc);font-size:12px;padding:0}
+.eq-in .more:hover{text-decoration:underline}
+.eq-st{font-size:12px;color:var(--blue);margin-top:6px}
+.eq-st.top{color:var(--acc)}
+.eq-n{font-size:11.5px;color:var(--faint);margin-top:4px;line-height:1.45}
+.eq details{margin-top:5px;font-size:12px;color:var(--mute)}
+.eq summary{cursor:pointer}
+.eq details ul{margin:4px 0 0;padding-left:18px}
+.ev-info{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;font-size:12.5px;color:var(--mute)}
+.ev-info input{width:100%}
+.ev-info input::placeholder{color:#9a968c}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:5px;overflow:hidden;flex:none}
+.seg button{border:0;background:var(--panel);padding:4px 10px;font-size:12.5px;color:var(--mute)}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button.on{background:var(--acc);color:#fff}
+.ev-rate{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 12px;align-items:center;font-size:12.5px}
+.ev-rate b{font-weight:600}
+.ev-rate span{color:var(--faint)}
+@media (max-width:1080px){ .ev-wrap{grid-template-columns:1fr} }
+/* 학급운영비 */
+.stats b.neg{color:var(--red)} .stats b.pos{color:var(--acc)}
+.bd-two{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}
+@media (max-width:1080px){ .bd-two{grid-template-columns:1fr} }
+.bd-set{display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:12px}
+.bd-set input{width:130px}
+.bd-set input.wide{width:150px}
+.warn{list-style:none;margin:0;padding:0;font-size:13px}
+.warn li{padding:5px 0 5px 20px;border-bottom:1px solid var(--line);position:relative;line-height:1.45}
+.warn li:last-child{border-bottom:0}
+.warn li::before{content:"!";position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:50%;background:var(--amber-w);color:var(--amber);font-size:10px;font-weight:700;text-align:center;line-height:14px}
+.warn li.bad::before{background:var(--red-w);color:var(--red)}
+.warn li.ok::before{content:"✓";background:var(--acc-w);color:var(--acc)}
+@media (max-width:640px){ .ev-rate{grid-template-columns:1fr auto} .ev-rate span{display:none} }
 @media (max-width:640px){
   .top{gap:10px;padding:0 12px}
   .brand small,.legend{display:none}
@@ -270,10 +327,22 @@ textarea.memo:focus{border-color:var(--acc)}
    데이터는 이 브라우저(localStorage)에 먼저 저장되고,
    Firebase(Firestore) appState/planique2 문서에 동기화됩니다 (맨 아래 module 스크립트).
    ============================================================ */
-const APP_VERSION = "2.3.1";
+const APP_VERSION = "2.5.0";
 // 버전을 올릴 때 여기에 한 묶음 추가하면 설정 > 패치 노트에 자동으로 나타나고,
 // 이 기기에서 처음 실행된 날짜가 함께 기록됩니다.
 const PATCH_NOTES = [
+  { ver:"2.5.0", date:"2026-11-17", items:[
+    "학급운영비(개산급) 화면 추가: 수령액·사용액·잔액(초과는 빨강)·증빙 종류별 합계",
+    "구입 내역 표: 금액(수량×단가)·합계(+배송비) 자동 계산, 엑셀 집계표를 머리글째 붙여넣으면 열 이름에 맞춰 들어감",
+    "확인 필요: 초과·반납액, 빠진 칸(구입일·구입처·증빙), 세무 증빙이 안 되는 네이버 구매영수증 알림",
+    "정산서 내용 복사: 정책·단위·세부사업, 지급내역, 정산 문구, 명세서(표에 붙여넣기 가능)",
+  ]},
+  { ver:"2.4.0", date:"2026-11-17", items:[
+    "다면평가 화면 추가: 교사 자기실적(정량) 평가서 점수를 항목별로 계산하고 총점·다음 기준까지 남은 횟수 표시",
+    "수업공개(컨설팅·연수의 '공개수업'), 컨설팅·연수 참여, 학생·학부모 상담 횟수는 앱 기록에서 자동으로 셈 (평가 기간 안, 앱에 없는 실적은 '더하기')",
+    "근무개월 비례 항목(가-1, 나-2·3, 라-2) 자동 계산",
+    "정성 평가서(서식1) 인적사항·기초 자료·자기실적·자기 평가 종합을 적고 한 번에 복사",
+  ]},
   { ver:"2.3.1", date:"2026-11-17", items:[
     "핸드폰 홈 화면에 앱으로 설치 가능 (안드로이드: 메뉴 > 앱 설치, 아이폰: 공유 > 홈 화면에 추가)",
     "앱을 내리거나 다른 앱으로 넘어갈 때 고치던 내용을 바로 클라우드에 저장",
@@ -1085,14 +1154,14 @@ document.addEventListener("keydown", e => { if((e.ctrlKey || e.metaKey) && (e.ke
 /* ============================================================
    화면
    ============================================================ */
-const PAGES = [["home","홈"],["tt","시간표"],["lessons","차시 목록"],["plan","진도"],["hours","시수"],["todo","할 일"],["events","일정"],["students","학생"],["training","컨설팅·연수"],["settings","설정"]];
+const PAGES = [["home","홈"],["tt","시간표"],["lessons","차시 목록"],["plan","진도"],["hours","시수"],["todo","할 일"],["events","일정"],["students","학생"],["training","컨설팅·연수"],["budget","학급운영비"],["eval","다면평가"],["settings","설정"]];
 function go(page, extra){ Object.assign(ui, extra || {}); ui.page = page; activeGridId = null; render(); scrollTo(0,0); }
 function openDay(d){ go("day", { day:d }); }
 function render(){
   cache = null;
   for(const k in grids) delete grids[k];
   $("#nav").innerHTML = PAGES.map(([id,label]) => `<button data-p="${id}" class="${ui.page === id || (id === "home" && ui.page === "day") || (id === "students" && ui.page === "student") ? "on" : ""}">${label}</button>`).join("");
-  ({ home:pgHome, day:pgDay, tt:pgTT, lessons:pgLessons, plan:pgPlan, hours:pgHours, todo:pgTodo, events:pgEvents, students:pgStudents, student:pgStudent, training:pgTraining, settings:pgSettings })[ui.page]();
+  ({ home:pgHome, day:pgDay, tt:pgTT, lessons:pgLessons, plan:pgPlan, hours:pgHours, todo:pgTodo, events:pgEvents, students:pgStudents, student:pgStudent, training:pgTraining, budget:pgBudget, eval:pgEval, settings:pgSettings })[ui.page]();
 }
 $("#nav").onclick = e => { const b = e.target.closest("button"); if(b) go(b.dataset.p); };
 $("#undoBtn").onclick = undo;
@@ -1522,6 +1591,312 @@ function pgTraining(){
   new Grid($("#g-trn"), { id:"trn", maxH:Math.max(320, innerHeight-170), ...src(S.trainings, () => ({ done:false, date:"", kind:"", title:"", org:"", place:"", memo:"" })), rowCls:t => t.done ? "done" : "", cols:[
     { key:"done", label:"", tip:"완료", w:34, type:"check", al:"c" }, { key:"date", label:"날짜", w:92, type:"date" }, { key:"kind", label:"구분", w:80, list:["컨설팅","연수","협의회","공개수업"] },
     { key:"title", label:"이름", cls:() => "strike" }, { key:"org", label:"담당자·기관", w:180 }, { key:"place", label:"장소", w:130 }, { key:"memo", label:"메모", w:300 } ]});
+}
+
+/* ----- 학급운영비 (개산급) ----- */
+const BD_PROOF = ["현금영수증","카드 매출전표","세금계산서","거래명세서","구매영수증(네이버)","출력본 보유","기타"];
+const won = n => (Math.round(Number(n) || 0)).toLocaleString("ko-KR");
+const toNum = v => { const n = Number(String(v ?? "").replace(/[,\s원]/g,"")); return String(v ?? "").trim() === "" || isNaN(n) ? "" : n; };
+const bdAmt = it => (Number(it.qty) || 0) * (Number(it.price) || 0);
+const bdTotal = it => bdAmt(it) + (Number(it.ship) || 0);
+const newBdItem = () => ({ date:"", vendor:"", name:"", qty:"", price:"", ship:"", proof:"", approval:"", file:"", memo:"" });
+function bdState(){
+  const b = S.budget || (S.budget = {});
+  b.items = b.items || [];
+  return b;
+}
+function bdCheck(b){
+  const used = b.items.reduce((s,it) => s + bdTotal(it), 0), recv = Number(b.recv) || 0, diff = recv - used, out = [];
+  if(recv && diff < 0) out.push(["bad", `사용액이 수령액보다 ${won(-diff)}원 많습니다. 초과분을 어떻게 처리할지 행정실과 협의하세요.`]);
+  if(recv && diff > 0) out.push(["", `남은 ${won(diff)}원은 반납해야 합니다. 행정실에 정산서를 낸 뒤 반납 일자를 협의하세요.`]);
+  b.items.forEach((it,i) => {
+    const nm = `${i+1}번 ${it.name || "(품명 없음)"}`, miss = [!it.date && "구입일", !it.vendor && "구입처", !it.proof && "증빙 종류", !(it.qty && it.price) && "수량·단가"].filter(Boolean);
+    if(miss.length) out.push(["", `${nm}: ${miss.join("·")}을(를) 채워 주세요.`]);
+    if(/구매영수증|네이버/.test(it.proof || "")) out.push(["bad", `${nm}: 네이버 구매영수증은 "세무상 증빙서류로 활용할 수 없음"이라고 적혀 있어, 정산 기준에 따라 카드 매출전표나 현금영수증이 필요할 수 있습니다.`]);
+  });
+  if(!out.length) out.push(["ok", recv ? "수령액과 사용액이 딱 맞고, 빠진 칸이 없습니다." : "수령액을 적으면 잔액과 반납액을 계산합니다."]);
+  return { used, recv, diff, out };
+}
+function bdText(b){
+  const k = bdCheck(b), ymd = s => { if(!s) return ""; const x = pd(s); return `${x.getFullYear()}. ${x.getMonth()+1}.${p2(x.getDate())}`; };
+  const many = it => it.qty && it.price && Number(it.qty) !== 1;
+  const desc = it => `${it.name || ""}${many(it) ? ` (${won(it.price)}원×${it.qty})` : ""}${Number(it.ship) ? ` + 배송비 ${won(it.ship)}원` : ""}`;
+  const items = b.items.slice().sort((a,c) => (a.date || "9") < (c.date || "9") ? -1 : 1);
+  const L = ["학급운영비 개산급 정산서 (단위: 원)", "",
+    `정책사업: ${b.policy || ""} / 단위사업: ${b.unit || ""} / 세부사업: ${b.detail || ""}`,
+    `자금 수령액①: ${won(k.recv)} / 지급액②: ${won(k.used)} / 차액(①-②): ${won(k.diff)}`, "", "지급내역"];
+  items.forEach(it => L.push(`○ ${it.name || ""}`, `  - ${many(it) || Number(it.ship) ? `${won(it.price)}원${many(it) ? `×${it.qty}` : ""}${Number(it.ship) ? ` + 배송비 ${won(it.ship)}원` : ""} = ` : ""}${won(bdTotal(it))}원`));
+  const kd = s => { const x = pd(s); return `${x.getFullYear()}년 ${x.getMonth()+1}월 ${x.getDate()}일`; };
+  L.push("", `${b.recvDate ? kd(b.recvDate) : "0000년 00월 00일"} 수령한 자금을 위와 같이 정산합니다.`, "붙임: 영수증 별첨",
+    `개산급 수령자  학년반: ${b.cls || ""}  직: 교사  성명: ${b.name || ""}`, `반납금액: ${k.diff > 0 ? won(k.diff) + "원" : "없음"}   반납일자: ${b.returnDate ? ymd(b.returnDate) : ""}`,
+    "", "명세서", ["사용일자","사용업체명","금액","사용내역"].join("\t"));
+  items.forEach(it => L.push([ymd(it.date), it.vendor || "", won(bdTotal(it)), desc(it)].join("\t")));
+  L.push(["합계","",won(k.used),""].join("\t"));
+  return L.join("\n");
+}
+// 엑셀 집계표를 머리글째 붙여넣으면 열 이름으로 맞춰 넣음
+const BD_HEAD = { "구입일":"date","사용일자":"date","구입처":"vendor","사용업체명":"vendor","품명":"name","사용내역":"name","수량":"qty","단가":"price","배송비":"ship","증빙 종류":"proof","증빙종류":"proof","승인번호":"approval","증빙 파일명":"file","증빙파일명":"file","증빙 파일":"file","비고":"memo","합계":"_total","금액":"_amt" };
+function bdPaste(m){
+  const hi = m.findIndex(r => r.some(c => c.trim() === "품명"));
+  if(hi < 0) return false;
+  const map = m[hi].map(c => BD_HEAD[c.trim()] || ""), b = bdState(); let n = 0, skip = 0;
+  m.slice(hi+1).forEach(r => {
+    const o = newBdItem(); let amt = "", tot = "";
+    r.forEach((v,j) => { const k = map[j]; v = (v || "").trim(); if(!k) return;
+      if(k === "date") o.date = v ? (parseDate(v) || "") : "";
+      else if(k === "qty" || k === "price" || k === "ship") o[k] = toNum(v);
+      else if(k === "_amt") amt = toNum(v); else if(k === "_total") tot = toNum(v);
+      else o[k] = v; });
+    if(!o.name || /^합계/.test(r[0] || "")) return;
+    if(o.qty === "" && o.price === "" && (amt !== "" || tot !== "")){ o.qty = 1; o.price = amt !== "" ? amt : tot; }
+    if(b.items.some(x => x.date === o.date && x.name === o.name && bdTotal(x) === bdTotal(o))){ skip++; return; }
+    b.items.push(o); n++;
+  });
+  setTimeout(() => toast(`${n}건을 넣었습니다${skip ? ` (이미 있는 ${skip}건은 건너뜀)` : ""}`), 0);
+  return true;
+}
+function pgBudget(){
+  const b = bdState(), k = bdCheck(b);
+  const byProof = {}; b.items.forEach(it => { const p = it.proof || "(미입력)"; byProof[p] = (byProof[p] || 0) + bdTotal(it); });
+  const f = (key,label,ph,cls,type) => `<label class="ev-f">${label} <input${cls ? ` class="${cls}"` : ""} type="${type || "text"}" data-k="${key}" value="${esc(b[key] ?? "")}" placeholder="${esc(ph || "")}"${type === "text" || !type ? "" : ""}></label>`;
+  V().innerHTML = `<div id="bdRoot">
+  <div class="page-head"><h1>학급운영비</h1><span class="desc">개산급 수령액·구입 내역·정산서</span><div class="row sp"><button class="btn pri" id="bdCopy">정산서 내용 복사</button></div></div>
+  <div class="stats">
+    <div><b>${won(k.recv)}</b>수령액 ①</div><div><b>${won(k.used)}</b>사용액 ② (${b.items.length}건)</div>
+    <div><b class="${k.diff < 0 ? "neg" : k.diff > 0 ? "" : "pos"}">${k.diff < 0 ? "−" + won(-k.diff) : won(k.diff)}</b>${k.diff < 0 ? "초과" : k.diff > 0 ? "반납할 금액" : "차액 ①−②"}</div>
+    ${Object.entries(byProof).map(([p,v]) => `<div><b style="font-size:15px">${won(v)}</b>${esc(p)}</div>`).join("")}
+  </div>
+  <div class="panel" style="margin-bottom:14px"><h2>개산급 정보</h2>
+    <div class="bd-set">
+      ${f("recv","수령액(원)","766000","","text")}${f("recvDate","수령일","","wide","date")}${f("cls","학년반","4-8")}${f("name","성명","")}${f("returnDate","반납일자","","wide","date")}
+      ${f("policy","정책사업","기본적 교육활동","wide")}${f("unit","단위사업","","wide")}${f("detail","세부사업","","wide")}
+    </div>
+  </div>
+  <div class="bd-two">
+    <div class="panel"><h2>구입 내역 <button class="more" id="bdSort">구입일순 정렬</button></h2><div id="g-bd"></div>
+      <p class="hint">금액 = 수량 × 단가, 합계 = 금액 + 배송비. 엑셀 집계표에서 <b>머리글 줄(순번·구입일·품명…)부터</b> 복사해 표에 붙여넣으면 열 이름에 맞춰 한 번에 들어갑니다 (이미 있는 건은 건너뜀). 우클릭으로 행 추가·삭제.</p></div>
+    <div class="panel"><h2>확인 필요</h2><ul class="warn">${k.out.map(([c,t]) => `<li class="${c}">${esc(t)}</li>`).join("")}</ul>
+      <p class="hint">[작성요령] ① 수령액은 개산급으로 받은 금액 ② 지급액은 직접 지급한 금액 (현금영수증·카드 사용 내역 첨부) ③ 차액은 반납 ④ 반납 시 행정실에 정산서 제출 후 반납 일자 사전 협의</p></div>
+  </div></div>`;
+  const root = $("#bdRoot");
+  root.addEventListener("change", e => { const t = e.target.closest("[data-k]"); if(!t) return; const key = t.dataset.k; mut(() => { S.budget[key] = key === "recv" ? toNum(t.value) : t.value.trim(); }); });
+  $("#bdSort").onclick = () => mut(() => b.items.sort((a,c) => (a.date || "9") < (c.date || "9") ? -1 : 1));
+  $("#bdCopy").onclick = () => (navigator.clipboard ? navigator.clipboard.writeText(bdText(b)) : Promise.reject()).then(() => toast("정산서 내용을 복사했습니다 (명세서는 탭으로 나뉘어 표에 붙여넣기 가능)"), () => toast("복사하지 못했습니다"));
+  const numCol = (key,label,w) => ({ key, label, w, al:"r", fmt:v => v === "" || v == null ? "" : won(v), set:(r,v) => { r[key] = toNum(v); } });
+  new Grid($("#g-bd"), { id:"bd", maxH:Math.max(320, innerHeight-300), ...src(b.items, newBdItem), empty:emptyBy("date","vendor","name","qty","price","ship","proof","approval","file","memo"), paste:bdPaste, cols:[
+    { label:"순번", w:44, type:"ro", al:"c", get:r => b.items.indexOf(r)+1 },
+    { key:"date", label:"구입일", w:92, type:"date" },
+    { key:"vendor", label:"구입처", w:110, list:() => [...new Set(b.items.map(x => x.vendor).filter(Boolean))] },
+    { key:"name", label:"품명" },
+    numCol("qty","수량",56), numCol("price","단가",84),
+    { label:"금액", w:90, type:"ro", al:"r", get:r => bdAmt(r) ? won(bdAmt(r)) : "" },
+    numCol("ship","배송비",70),
+    { label:"합계", w:92, type:"ro", al:"r", get:r => bdTotal(r) ? won(bdTotal(r)) : "" },
+    { key:"proof", label:"증빙 종류", w:140, list:BD_PROOF, cls:(r,v) => /구매영수증|네이버/.test(v || "") ? "bad" : "" },
+    { key:"approval", label:"승인번호", w:104 },
+    { key:"file", label:"증빙 파일", w:170 },
+    { key:"memo", label:"비고", w:220 },
+  ]});
+}
+
+/* ----- 다면평가 (교사 자기실적 평가서 점검) ----- */
+// 기준표: [이상, 점수] — 큰 기준부터
+const EV_T = {
+  hours:[[22,10],[20,9],[0,8]], open:[[5,10],[4,9],[0,8]], openN:[[3,10],[2,9],[0,8]], train:[[5,10],[4,8],[0,6]],
+  cns:[[30,10],[20,9],[0,8]], trainHours:[[90,4],[60,3],[0,2]], visits:[[3,5],[2,4],[1,3],[0,2]],
+};
+const tierPts = (t,v) => { for(const [m,p] of t) if(v >= m) return p; return t[t.length-1][1]; };
+const tierNext = (t,v) => { const up = t.filter(([m]) => m > v).pop(); return up ? { need:Math.round((up[0]-v)*10)/10, pts:up[1] } : null; };
+const fmtPt = v => v == null ? "—" : Number.isInteger(v) ? String(v) : v.toFixed(1);
+const EV_RATE = [["goal","목표달성도","설정한 목표에 대한 달성 정도"],["creat","창의성","학습지도, 생활지도, 전문성개발, 담당 업무 등의 창의적인 수행 정도"],["time","적시성","학습지도, 생활지도, 전문성개발, 담당 업무 등을 기한 내에 효과적으로 처리한 정도"],["effort","노력도","목표 달성을 위한 노력, 공헌도"]];
+const EV_Q = [["learn","가. 학습지도","학습지도"],["life","나. 생활지도","생활지도"],["pro","다. 전문성개발","전문성개발"],["duty","라. 담당 업무","담당 업무"]];
+
+function evData(){
+  const y = schoolYear(), e = S.eval || (S.eval = {});
+  e.from = e.from || `${y}-03-01`; e.to = e.to || iso(new Date(y+1, 2, 0));
+  e.type = e.type || "일반교사"; e.info = e.info || {}; e.q = e.q || {}; e.rate = e.rate || {};
+  const months = Math.min(12, Math.max(0, Number(e.months ?? 12) || 0)) || 12;
+  const inP = d => d && d >= e.from && d <= e.to;
+  const byDate = (a,b) => (a.date || "") < (b.date || "") ? -1 : 1;
+  const trn = kinds => S.trainings.filter(t => t.done && inP(t.date) && kinds.includes(t.kind)).sort(byDate);
+  const cns = S.counsels.filter(c => inP(c.date)).sort(byDate), isPar = c => /학부모|보호자/.test(c.topic || "");
+  const d = { e, months, open:trn(["공개수업"]), train:trn(["컨설팅","연수"]), cns, cnsPar:cns.filter(isPar), cnsStu:cns.filter(c => !isPar(c)) };
+  const N = v => v === "" || v == null || isNaN(Number(v)) ? null : Number(v);
+  const adj = k => Number(e[k]) || 0;
+  const trnLi = t => `${fmtMD(t.date)} ${t.title || ""}${t.place ? " (" + t.place + ")" : ""}`;
+  const cnsLi = c => `${fmtMD(c.date)} ${c.no ? c.no + "번 " + stuName(c.no) : ""} ${c.topic || ""}`;
+  const SEL = {
+    guide:[[10,"1·6학년 담임, 교무"],[9,"2·3·4·5학년 담임, 특수"],[8,"교담, 비교과"]],
+    special:[[10,"해당 사항 있음"],[9,"해당 사항 없음"]], research:[[1,"해당 있음"],[0,"해당 없음"]],
+    contest:[[10,"해당 사항 있음"],[9,"해당 사항 없음"]], duty:[[10,"교무부장"],[8,"보직교사"],[3,"일반교사"]],
+    pub:[[10,"공모사업 총괄, 담당자"],[9,"해당 없음"]],
+  };
+  const num = (id,key,label,crit,tiers,unit,o) => ({ id, kind:"num", key, label, crit, tiers, unit, val:N(e[key]), ...o });
+  const count = (id,list,adjKey,label,crit,tiers,unit,o) => ({ id, kind:"count", list, adjKey, label, crit, tiers, unit, val:list.length + adj(adjKey), ...o });
+  const sel = (id,key,label,o) => ({ id, kind:"sel", key, label, opts:SEL[key], crit:SEL[key].map(([p,t]) => `${t} ${p}`).join(" · "), val:N(e[key]), ...o });
+  const areas = [
+    ["가","학습지도",30,[
+      num("가-1","hours","1) 주당 수업시간","22시간 이상 10 · 20~22시간 미만 9 · 20시간 미만 8",EV_T.hours,"시간",{ prorate:true,
+        note:"교무부장은 주요 학교 행사 진행으로 24시간 인정. (보건) 주당 처치 10명당 1시간(최고 10) · (영양) 급식지도 9일당 1시간(최고 9) · (사서) 주당 이용자 27명당 1시간(최고 8) · (상담) 월 상담횟수 4건당 1시간(최고 8)" }),
+      count("가-2",d.open,"openAdj","2) 수업공개 횟수", e.type === "비교수교과교사" ? "비교수교과교사: 3회 이상 10 · 2회 9 · 1회 이하 8" : "일반교사: 5회 이상 10 · 4회 9 · 3회 이하 8", e.type === "비교수교과교사" ? EV_T.openN : EV_T.open,"회",{
+        src:"컨설팅·연수에서 구분이 '공개수업'이고 완료 표시한 것", go:"training", li:trnLi,
+        note:"학부모수업공개(AI중점학교 수업 포함), 좋은수업 실천연구, 동료장학(내부결재 및 영상촬영)을 통해 실제로 실시한 수업공개 횟수, 교육과정 설명회 운영 주관 횟수" }),
+      count("가-3",d.train,"trainAdj","3) 교내 컨설팅 및 강의, 연수 참여 횟수","5회 이상 10 · 4회 8 · 3회 이하 6",EV_T.train,"회",{
+        src:"컨설팅·연수에서 구분이 '컨설팅'·'연수'이고 완료 표시한 것", go:"training", li:trnLi,
+        note:"의무연수는 제외 — 목록에 의무연수가 섞여 있으면 '더하기'에 빼는 수(예: -1)를 적으세요" }),
+    ]],
+    ["나","생활지도",30,[
+      count("나-1",d.cns,"cnsAdj","1) 학생 또는 학부모 상담실적","30회 이상 10 · 20회 이상~30회 미만 9 · 10회 미만 8",EV_T.cns,"회",{
+        src:`학생 > 상담 기록 (학생 ${d.cnsStu.length} · 학부모 ${d.cnsPar.length})`, go:"students", li:cnsLi,
+        note:"기준표에 10~19회 칸이 없어 20회 미만은 8점으로 계산했습니다. 주제에 '학부모'나 '보호자'가 들어 있으면 학부모 상담으로 셉니다" }),
+      sel("나-2","guide","2) 생활지도 곤란도",{ prorate:true }),
+      sel("나-3","special","3) 통합 학급 및 특수 학급 담당",{ prorate:true }),
+    ]],
+    ["다","전문성개발",10,[
+      num("다-1","trainHours","1) 직무연수 이수실적","90시간 이상 4 · 60~90시간 미만 3 · 60시간 미만 2",EV_T.trainHours,"시간"),
+      num("다-2","visits","2) 외부 대면 수업 참관","3회 이상 5 · 2회 4 · 1회 3 · 0회 2",EV_T.visits,"회",{ note:"등록부 사진 또는 참관증 중 1개 & 복무내역 또는 여비정산서 중 1개, 증빙자료 2개 제출 시 인정" }),
+      sel("다-3","research","3) 연구대회·군단위 이상 자료개발 참가",{ note:"연구대회는 보고서를 제출한 경우만 인정" }),
+    ]],
+    ["라","담당업무",30,[
+      sel("라-1","contest","1) 교육지원청·교육청·교육부 주관 대회 참가 지도",{ note:"직접 지도 교원만 인정 (전학급 또는 전교생 대상 참여 대회 제외)" }),
+      sel("라-2","duty","2) 업무 추진 (보직/일반교사)",{ prorate:true }),
+      sel("라-3","pub","3) 공모사업 추진",{ note:"군단위 이상 공모사업 총괄 및 실무자만 해당" }),
+    ]],
+  ].map(([k,name,max,items]) => {
+    items.forEach(it => {
+      it.base = it.val == null ? null : it.tiers ? tierPts(it.tiers, it.val) : it.val;
+      it.max = it.tiers ? it.tiers[0][1] : it.opts[0][0];
+      it.score = it.base == null ? null : it.prorate ? Math.round(it.base * months / 12 * 10) / 10 : it.base;
+    });
+    const sum = Math.round(items.reduce((s,it) => s + (it.score || 0), 0) * 10) / 10;
+    return { k, name, max, items, sum };
+  });
+  d.areas = areas;
+  d.total = Math.round(areas.reduce((s,a) => s + a.sum, 0) * 10) / 10;
+  d.missing = areas.flatMap(a => a.items).filter(it => it.score == null).length;
+  // 정성 평가서 기초 자료 — 비워 두면 점검표·기록에서 자동으로
+  d.auto = {
+    head:{ 10:"교무부장", 8:"보직교사", 3:"해당 없음" }[e.duty] || "",
+    hours:e.hours ? e.hours + "시간" : "",
+    open:areas[0].items[1].val + "회",
+    cnsStu:d.cnsStu.length + "회", cnsPar:d.cnsPar.length + "회",
+  };
+  return d;
+}
+
+function evItemHTML(it, d){
+  const e = d.e;
+  let ctl = "";
+  if(it.kind === "num") ctl = `<label class="ev-f"><input type="number" inputmode="decimal" min="0" step="any" data-k="${it.key}" data-r value="${esc(e[it.key] ?? "")}"> ${it.unit}</label>`;
+  else if(it.kind === "count") ctl = `<span>앱 기록 <b>${it.list.length}</b>${it.unit}</span><label class="ev-f">+ 더하기 <input type="number" inputmode="numeric" step="1" data-k="${it.adjKey}" data-r value="${esc(e[it.adjKey] ?? "")}" placeholder="0"></label><span>= <b>${it.val}</b>${it.unit}</span>${it.go ? `<button class="more" data-go="${it.go}">기록하러 가기 ›</button>` : ""}`;
+  else ctl = `<select data-k="${it.key}" data-r><option value="">선택하세요</option>${it.opts.map(([p,t]) => `<option value="${p}"${String(e[it.key]) === String(p) ? " selected" : ""}>${esc(t)} (${p}점)</option>`).join("")}</select>`;
+  let st = "";
+  if(it.tiers && it.val != null){
+    const nx = tierNext(it.tiers, it.val);
+    st = nx ? `<div class="eq-st">앞으로 ${nx.need}${it.unit} 더 하면 ${nx.pts}점</div>` : `<div class="eq-st top">최고 기준 달성</div>`;
+  }
+  if(it.prorate && it.base != null && d.months !== 12) st += `<div class="eq-n">기준 ${it.base}점 × 근무 ${d.months}개월/12 = ${fmtPt(it.score)}점</div>`;
+  const cls = it.score == null ? "none" : it.base >= it.max ? "full" : "";
+  return `<div class="eq">
+    <div class="eq-h"><b>${esc(it.label)}</b><span class="eq-s ${cls}">${it.score == null ? "입력 전" : fmtPt(it.score)}<small>/ ${it.max}</small></span></div>
+    <div class="eq-c">${esc(it.crit)}${it.prorate ? " · 근무개월 비례" : ""}</div>
+    <div class="eq-in">${ctl}</div>${st}
+    ${it.note ? `<div class="eq-n">※ ${esc(it.note)}</div>` : ""}
+    ${it.kind === "count" ? `<details><summary>셈한 기록 ${it.list.length}건 — ${esc(it.src)}</summary>${it.list.length ? `<ul>${it.list.map(r => `<li>${esc(it.li(r))}</li>`).join("")}</ul>` : `<div class="eq-n">평가 기간 안의 기록이 없습니다.</div>`}</details>` : ""}
+  </div>`;
+}
+
+function evText(d, which){
+  const e = d.e, ymd = s => { const x = pd(s); return `${x.getFullYear()}년 ${x.getMonth()+1}월 ${x.getDate()}일`; };
+  const iv = k => (e.info[k] || "").trim() || d.auto[k] || "";
+  if(which === "quant"){
+    const L = [`교사 자기실적(정량)평가서`, `소속: ${iv("school") || "해남동초등학교"}   성명: ${iv("name")}`, `평가 기간: ${ymd(e.from)} 부터 ${ymd(e.to)} 까지${d.months !== 12 ? ` (근무 ${d.months}개월)` : ""}`, ""];
+    d.areas.forEach(a => {
+      L.push(`${a.k}. ${a.name} (${a.max}점) — ${fmtPt(a.sum)}점`);
+      a.items.forEach(it => {
+        let v = it.val == null ? "(입력 전)" : it.kind === "sel" ? (it.opts.find(o => o[0] === it.val) || [,""])[1] : it.val + it.unit;
+        if(it.kind === "count" && it.list.length) v += ` — ${it.list.map(it.li).join(", ")}`;
+        L.push(`  ${it.label}: ${v} → ${fmtPt(it.score)}점`);
+      });
+    });
+    L.push("", `총점: ${fmtPt(d.total)}점 / 100${d.missing ? ` (입력 전 ${d.missing}개 항목)` : ""}`);
+    return L.join("\n");
+  }
+  const q = k => (e.q[k] || "").trim();
+  const L = [`교사 자기실적(정성)평가서`, ``,
+    `2. 평가 기간: ${ymd(e.from)}부터 ${ymd(e.to)}까지`, ``,
+    `3. 평가자 인적사항`, `○ 소속: ${iv("school") || "해남동초등학교"}   ○ 직위: ${iv("position")}   ○ 성명: ${iv("name")}`, ``,
+    `4. 평가자 기초 자료`];
+  EV_INFO.forEach(([k,label]) => L.push(`○ ${label}: ${iv(k)}`));
+  L.push(``, `5. 자기실적 평가`);
+  EV_Q.forEach(([k,title,name]) => {
+    L.push(title + (k === "learn" && e.type === "비교수교과교사" ? " (비교수교과교사는 해당없음)" : ""));
+    L.push(`○ ${name} 추진 목표`, q(k + "Goal"), `○ ${name} 추진 실적`, q(k + "Done"));
+    if(k === "duty") L.push(`○ 창의적 업무개선 사항`, q("improve"));
+    L.push("");
+  });
+  L.push(`※ 자기 평가 종합 상황`);
+  EV_RATE.forEach(([k,label]) => L.push(`${label}: ${e.rate[k] || ""}`));
+  return L.join("\n").replace(/\n{3,}/g, "\n\n");
+}
+const EV_INFO = [["grade","담당 학년 및 학급"],["subjects","담당 과목"],["homeroom","담임 여부"],["duties","담당 업무"],["head","보직교사 여부"],["hours","주당 수업시간 수"],["open","연간 수업공개 실적"],["cnsStu","연간 학생 상담 실적"],["cnsPar","연간 학부모 상담 실적"],["etc","그 밖의 실적사항"]];
+
+function pgEval(){
+  const d = evData(), e = d.e;
+  const inp = (k,ph) => `<input data-k="info.${k}" value="${esc(e.info[k] || "")}" placeholder="${esc(ph || "")}">`;
+  const ta = (k,ph) => `<textarea class="memo" data-k="q.${k}" placeholder="${esc(ph || "")}">${esc(e.q[k] || "")}</textarea>`;
+  V().innerHTML = `<div id="evRoot">
+  <div class="page-head"><h1>다면평가</h1><span class="desc">교사 자기실적 평가서 점검 · 정량 점수 계산과 정성 평가서 작성</span>
+    <div class="row sp"><button class="btn" id="evCopyQ">정량 실적 복사</button><button class="btn" id="evCopyS">정성 평가서 복사</button></div></div>
+  <div class="ev-wrap">
+    <div class="ev-col">
+      <div class="panel ev-sum">
+        <div><div class="tot">${fmtPt(d.total)}<small>/ 100</small></div><div class="hint" style="margin-top:4px">${d.missing ? `입력 전 ${d.missing}개 항목은 0점으로 셈` : "모든 항목 입력 완료"}</div></div>
+        <div class="areas">${d.areas.map(a => `<div><b>${fmtPt(a.sum)}<small style="color:var(--faint);font-weight:500"> / ${a.max}</small></b>${a.k}. ${a.name}</div>`).join("")}</div>
+        <div class="row" style="flex-basis:100%">
+          <label class="ev-f">평가 기간 <input type="date" data-k="from" data-r value="${esc(e.from)}"> ~ <input type="date" data-k="to" data-r value="${esc(e.to)}"></label>
+          <label class="ev-f">근무 개월 <input type="number" inputmode="decimal" min="0" max="12" step="0.1" data-k="months" data-r value="${esc(e.months ?? 12)}"></label>
+          <label class="ev-f">구분 <select data-k="type" data-r>${["일반교사","비교수교과교사"].map(t => `<option${e.type === t ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+        </div>
+        <p class="hint" style="margin:0;flex-basis:100%">* 가-1), 나-2)·3), 라-2)는 배점 × 근무개월수/12로 계산 (15일 미만은 버림, 반올림하여 소수 첫째 자리까지). 앱 기록은 평가 기간 안의 것만 셉니다. 1학기처럼 앱에 없는 실적은 '더하기'에 적으세요.</p>
+      </div>
+      ${d.areas.map(a => `<div class="panel"><h2>${a.k}. ${a.name} <span class="meta" style="margin-left:auto;font-weight:600;color:var(--ink)">${fmtPt(a.sum)} / ${a.max}</span></h2>${a.items.map(it => evItemHTML(it, d)).join("")}</div>`).join("")}
+    </div>
+    <div class="ev-col">
+      <div class="panel"><h2>정성 평가서 — 인적사항·기초 자료</h2>
+        <div class="ev-info">
+          <label>소속</label>${inp("school","해남동초등학교")}
+          <label>직위</label>${inp("position","예: 교사")}
+          <label>성명</label>${inp("name")}
+          ${EV_INFO.map(([k,label]) => `<label>${label}</label>${inp(k, d.auto[k] || "")}`).join("")}
+        </div>
+        <p class="hint">흐린 글씨는 정량 점검표와 앱 기록에서 자동으로 채운 값입니다. 직접 적으면 그 값이 쓰입니다.</p>
+      </div>
+      <div class="panel"><h2>5. 자기실적 평가</h2>
+        ${EV_Q.map(([k,title,name]) => `<h3 class="sub">${title}${k === "learn" && e.type === "비교수교과교사" ? " (비교수교과교사는 해당없음)" : ""}</h3>
+          <div class="lbl">${name} 추진 목표${k === "learn" ? " (학년 초에 계획되었던 학습지도 목표)" : ""}</div>${ta(k + "Goal")}
+          <div class="lbl">${name} 추진 실적${k === "learn" ? " (학년 초 목표한 내용과 대비하여 구체적으로)" : ""}</div>${ta(k + "Done")}
+          ${k === "duty" ? `<div class="lbl">창의적 업무개선 사항</div>${ta("improve")}` : ""}`).join("")}
+      </div>
+      <div class="panel"><h2>※ 자기 평가 종합 상황</h2>
+        <div class="ev-rate">${EV_RATE.map(([k,label,desc]) => `<b>${label}</b><span>${desc}</span><div class="seg">${["만족","보통","미흡"].map(v => `<button data-rate="${k}" data-v="${v}" class="${e.rate[k] === v ? "on" : ""}">${v}</button>`).join("")}</div>`).join("")}</div>
+      </div>
+    </div>
+  </div></div>`;
+  const root = $("#evRoot");
+  const setPath = (path,v) => { const ks = path.split("."); let x = S.eval; ks.slice(0,-1).forEach(k => { x = x[k] = x[k] || {}; }); x[ks[ks.length-1]] = v; };
+  // 점수에 영향 주는 칸: 바뀌면 다시 계산 (되돌리기 가능)
+  root.addEventListener("change", ev => { const t = ev.target.closest("[data-k][data-r]"); if(t) mut(() => setPath(t.dataset.k, t.value)); });
+  // 글 칸: 바로 저장만
+  root.addEventListener("input", ev => { const t = ev.target.closest("[data-k]"); if(!t || t.hasAttribute("data-r")) return; setPath(t.dataset.k, t.value); save(); });
+  root.addEventListener("click", ev => {
+    const r = ev.target.closest("[data-rate]");
+    if(r) return mut(() => { S.eval.rate[r.dataset.rate] = S.eval.rate[r.dataset.rate] === r.dataset.v ? "" : r.dataset.v; });
+    const g = ev.target.closest("[data-go]"); if(g) go(g.dataset.go);
+  });
+  const copy = which => { const t = evText(evData(), which); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast(which === "quant" ? "정량 실적을 복사했습니다" : "정성 평가서를 복사했습니다"), () => toast("복사하지 못했습니다")); };
+  $("#evCopyQ").onclick = () => copy("quant");
+  $("#evCopyS").onclick = () => copy("qual");
 }
 
 /* ----- 설정 ----- */
