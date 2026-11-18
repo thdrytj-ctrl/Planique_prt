@@ -274,6 +274,40 @@ textarea.memo:focus{border-color:var(--acc)}
 .ev-rate b{font-weight:600}
 .ev-rate span{color:var(--faint)}
 @media (max-width:1080px){ .ev-wrap{grid-template-columns:1fr} }
+/* 제출물 */
+.sb-add{margin:0 0 12px}
+.sb-add #sbName{flex:1}
+.sb{background:var(--panel);border:1px solid var(--line);border-radius:6px;margin-bottom:8px;min-width:0}
+.sb-h{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;user-select:none;flex-wrap:wrap}
+.sb-h:hover{background:#faf9f6}
+.sb-h .caret{color:var(--faint);width:10px;display:inline-block;transition:transform .12s}
+.sb.open .sb-h .caret{transform:rotate(90deg)}
+.sb-h b{font-size:14px}
+.sb-h .d{color:var(--faint);font-size:12px}
+.sb-c{margin-left:auto;display:flex;gap:6px}
+.sb-chip{font-style:normal;font-size:12px;padding:1px 8px;border-radius:10px;white-space:nowrap}
+.sb-y{background:var(--acc-w);color:var(--acc)}
+.sb-n{background:var(--red-w);color:var(--red)}
+.sb-p{background:var(--amber-w);color:var(--amber)}
+.sb-bar{flex:none;width:80px;height:5px;border-radius:3px;background:var(--line);overflow:hidden}
+.sb-bar i{display:block;height:100%;background:var(--acc)}
+.sb-b{padding:10px 14px 14px;border-top:1px solid var(--line)}
+.sb-b .gridwrap{max-width:760px}
+.sb-tool{margin-bottom:8px}
+.sb-tool input[data-f=name]{width:220px}
+.sb-left{font-size:12.5px;color:#7c2a1c;margin:0 0 8px;line-height:1.6}
+.sb-left b{font-weight:600;margin-right:4px}
+.sb-left.ok{color:var(--acc)}
+.grid td.sb-y{background:var(--acc-w);color:var(--acc);font-weight:600;cursor:pointer}
+.grid td.sb-n{background:var(--panel);color:var(--red);cursor:pointer}
+.grid td.sb-p{background:var(--amber-w);color:var(--amber);font-weight:600;cursor:pointer}
+.sb-pl li{cursor:pointer;align-items:center;border-bottom:1px solid var(--line);padding:5px 0}
+.sb-pl li:last-child{border-bottom:0}
+.sb-pl li .d{flex:none;width:40px;color:var(--faint);font-size:12px}
+.sb-pl li .x{flex:1}
+.sb-pl li em{font-style:normal;color:var(--faint);font-size:12px}
+.sb-pl li:hover .x{text-decoration:underline}
+@media (max-width:640px){ .sb-bar{display:none} .sb-c{margin-left:0;flex-basis:100%;padding-left:20px} .sb-tool input[data-f=name]{width:150px} }
 /* 학급운영비 */
 .stats b.neg{color:var(--red)} .stats b.pos{color:var(--acc)}
 .bd-two{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}
@@ -340,10 +374,16 @@ textarea.memo:focus{border-color:var(--acc)}
    데이터는 이 브라우저(localStorage)에 먼저 저장되고,
    Firebase(Firestore) appState/planique2 문서에 동기화됩니다 (맨 아래 module 스크립트).
    ============================================================ */
-const APP_VERSION = "2.6.0";
+const APP_VERSION = "2.7.0";
 // 버전을 올릴 때 여기에 한 묶음 추가하면 설정 > 패치 노트에 자동으로 나타나고,
 // 이 기기에서 처음 실행된 날짜가 함께 기록됩니다.
 const PATCH_NOTES = [
+  { ver:"2.7.0", date:"2026-11-18", items:[
+    "제출물 화면 추가 (기존 Planique '제출물 확인' 참고): 항목(날짜·이름)마다 펼쳐서 학생별 제출·미제출·미완성과 비고 기록",
+    "상태 칸을 누를 때마다 미제출 → 제출 → 미완성, '모두 제출', 미제출 명단 복사, 덜 걷힌 항목만 보기",
+    "학생 세부 기록에 제출물 현황과 '안 낸 제출물' 수, 학생 명단에 '안 낸 것' 열 추가",
+    "학생 > 기존 Planique에서 가져오기: 1.x 제출물 기록도 함께 가져옴",
+  ]},
   { ver:"2.6.0", date:"2026-11-18", items:[
     "운영 계획 화면 추가 (시트 '운영 계획' 탭): 계획 시작일부터 날짜·요일·주차·담당·교시별 진도와 그날 행사, 옆에 시수 점검",
     "운영 계획: 대체교사 기간에 잡힌 평가는 빨간 칸으로 표시",
@@ -790,6 +830,7 @@ function seedState(){
       {date:"2026-11-19",no:"8",type:"체험학습",memo:"교외체험학습"},
     ],
     counsels:[],
+    subs:[],
     trainings:[
       {done:true,date:"2026-11-11",kind:"컨설팅",title:"컨설팅 참여",org:"",place:"",memo:"노트북 대여 완료"},
       {done:false,date:"2026-11-24",kind:"연수",title:"수학 연수",org:"",place:"교무실",memo:""},
@@ -807,7 +848,7 @@ function load(){
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch(e){ S = null; }
   if(!S || !S.set) S = seedState();
   S.meta = S.meta || { versions:[] };
-  S.notes = S.notes || [];
+  S.notes = S.notes || []; S.subs = S.subs || [];
   if(!S.meta.lessonSeed){ // 2.0.1: 손대지 않은 과목만 시트 전체 차시 목록으로 채움
     const full = seedLessons();
     for(const ab in full){ const cur = S.lessons[ab] || []; if(cur.length <= (OLD_SEED_LEN[ab] || 0) && !(ab === "영" && cur.length)) S.lessons[ab] = full[ab]; }
@@ -829,7 +870,7 @@ window.Planique = {
     let d; try { d = JSON.parse(json); } catch(e){ return false; }
     if(!d || !d.set) return false;
     undoStack.push(JSON.stringify(S)); if(undoStack.length > 40) undoStack.shift();
-    S = d; S.meta = S.meta || { versions:[] }; S.notes = S.notes || [];
+    S = d; S.meta = S.meta || { versions:[] }; S.notes = S.notes || []; S.subs = S.subs || [];
     if(!S.meta.versions.some(v => v.ver === APP_VERSION)) S.meta.versions.push({ ver:APP_VERSION, firstRun:TODAY });
     try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){}
     render(); return true;
@@ -1173,14 +1214,14 @@ document.addEventListener("keydown", e => { if((e.ctrlKey || e.metaKey) && (e.ke
 /* ============================================================
    화면
    ============================================================ */
-const PAGES = [["home","홈"],["tt","시간표"],["lessons","차시 목록"],["plan","진도"],["ops","운영 계획"],["hours","시수"],["todo","할 일"],["events","일정"],["students","학생"],["training","컨설팅·연수"],["budget","학급운영비"],["eval","다면평가"],["settings","설정"]];
+const PAGES = [["home","홈"],["tt","시간표"],["lessons","차시 목록"],["plan","진도"],["ops","운영 계획"],["hours","시수"],["todo","할 일"],["events","일정"],["students","학생"],["subs","제출물"],["training","컨설팅·연수"],["budget","학급운영비"],["eval","다면평가"],["settings","설정"]];
 function go(page, extra){ Object.assign(ui, extra || {}); ui.page = page; activeGridId = null; render(); scrollTo(0,0); }
 function openDay(d){ go("day", { day:d }); }
 function render(){
   cache = null;
   for(const k in grids) delete grids[k];
   $("#nav").innerHTML = PAGES.map(([id,label]) => `<button data-p="${id}" class="${ui.page === id || (id === "home" && ui.page === "day") || (id === "students" && ui.page === "student") ? "on" : ""}">${label}</button>`).join("");
-  ({ home:pgHome, day:pgDay, tt:pgTT, lessons:pgLessons, plan:pgPlan, ops:pgOps, hours:pgHours, todo:pgTodo, events:pgEvents, students:pgStudents, student:pgStudent, training:pgTraining, budget:pgBudget, eval:pgEval, settings:pgSettings })[ui.page]();
+  ({ home:pgHome, day:pgDay, tt:pgTT, lessons:pgLessons, plan:pgPlan, ops:pgOps, hours:pgHours, todo:pgTodo, events:pgEvents, students:pgStudents, student:pgStudent, subs:pgSubs, training:pgTraining, budget:pgBudget, eval:pgEval, settings:pgSettings })[ui.page]();
 }
 $("#nav").onclick = e => { const b = e.target.closest("button"); if(b) go(b.dataset.p); };
 $("#undoBtn").onclick = undo;
@@ -1508,7 +1549,10 @@ function setStuNo(s,v){
   v = String(v).trim(); const old = String(s.no ?? "");
   if(v === old) return;
   if(v && S.students.some(x => x !== s && String(x.no) === v)){ toast(`${v}번은 이미 명단에 있습니다`); return; }
-  if(old && v) [S.attendance, S.counsels, S.notes].forEach(a => a.forEach(r => { if(String(r.no) === old) r.no = v; }));
+  if(old && v){
+    [S.attendance, S.counsels, S.notes].forEach(a => a.forEach(r => { if(String(r.no) === old) r.no = v; }));
+    S.subs.forEach(sb => ["st","nt"].forEach(k => { const m = sb[k]; if(m && old in m){ m[v] = m[old]; delete m[old]; } }));
+  }
   s.no = v;
 }
 function pgStudents(){
@@ -1539,7 +1583,8 @@ function pgStudents(){
     { key:"no", label:"번호", w:48, al:"c", set:setStuNo },
     { key:"name", label:"이름", w:84, tip:"이름을 누르면 학생 기록으로 이동", cls:(s,v) => v ? "lnk" : "", click:s => go("student", { stu:S.students.indexOf(s) }) },
     { key:"memo", label:"메모" },
-    { label:"기록", w:132, type:"ro", get:s => { if(s.no === "" || s.no == null) return ""; const a = cnt(c.att,s.no), b = cnt(c.cns,s.no), n = cnt(c.nts,s.no); return [a && `출결 ${a}`, b && `상담 ${b}`, n && `특이 ${n}`].filter(Boolean).join(" · "); } } ]});
+    { label:"기록", w:132, type:"ro", get:s => { if(s.no === "" || s.no == null) return ""; const a = cnt(c.att,s.no), b = cnt(c.cns,s.no), n = cnt(c.nts,s.no); return [a && `출결 ${a}`, b && `상담 ${b}`, n && `특이 ${n}`].filter(Boolean).join(" · "); } },
+    { label:"안 낸 것", w:70, type:"ro", al:"c", tip:"제출물 중 미제출·미완성 수", get:s => { if(s.no === "" || s.no == null) return ""; const k = subLeft(String(s.no)).length; return k ? k + "건" : ""; }, cls:(s,v) => v ? "neg" : "" } ]});
   $("#stuSort").onclick = () => mut(() => S.students.sort((a,b) => (Number(a.no) || 1e9) - (Number(b.no) || 1e9)));
   $("#stuDel").onclick = () => { const r = gs.range(), rows = S.students.slice(r.r0, r.r1+1); if(!rows.length) return; if(confirm(`${rows.map(s => (s.no ? s.no + "번 " : "") + (s.name || "")).join(", ")} — 명단에서 삭제할까요?\n(출결·상담 기록은 남습니다)`)) mut(() => { S.students = S.students.filter(s => !rows.includes(s)); }); };
   new Grid($("#g-att"), { id:"att", maxH:h, ...src(S.attendance, () => ({ date:"", no:"", type:"", memo:"" })), empty:emptyBy("date","no","type","memo"), cols:[ { key:"date", label:"날짜", w:90, type:"date" }, COL_NO, COL_NAME, { key:"type", label:"구분", w:80, list:ATT_TYPES }, { key:"memo", label:"사유·메모" } ]});
@@ -1566,6 +1611,7 @@ function pgStudent(){
     <div class="stats">
       ${["결석","지각","조퇴"].map(k => `<div><b>${cnt[k] || 0}</b>${k}</div>`).join("")}
       <div><b>${att.length - (cnt["결석"] || 0) - (cnt["지각"] || 0) - (cnt["조퇴"] || 0)}</b>그 밖의 출결</div><div><b>${cns.length}</b>상담</div><div><b>${nts.length}</b>특이사항</div>
+      ${S.subs.length && no ? `<div><b class="${subLeft(no).length ? "neg" : ""}">${subLeft(no).length}</b>안 낸 제출물</div>` : ""}
     </div>
     <div class="two" style="grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr)">
       <div style="display:grid;gap:14px;min-width:0">
@@ -1575,10 +1621,16 @@ function pgStudent(){
       <div style="display:grid;gap:14px;min-width:0">${no === "" ? `<div class="panel"><div class="empty">기본 정보에 번호를 적어야 출결·상담·특이사항을 연결할 수 있습니다.</div></div>` : `
         <div class="panel"><h2><i class="dot att"></i>출결</h2><div id="g-satt"></div></div>
         <div class="panel"><h2><i class="dot cns"></i>상담 기록</h2><div id="g-scns"></div></div>
-        <div class="panel"><h2><i class="dot nts"></i>특이사항</h2><div id="g-snts"></div></div>`}
+        <div class="panel"><h2><i class="dot nts"></i>특이사항</h2><div id="g-snts"></div></div>
+        <div class="panel"><h2>제출물 <button class="more" data-go="subs">전체 보기</button></h2>${stuSubsHTML(no)}</div>`}
       </div>
     </div>`;
   $("#back").onclick = () => go("students");
+  $(".two", V()).onclick = e => {
+    const g = e.target.closest("[data-go]"); if(g) return go(g.dataset.go);
+    const li = e.target.closest("li[data-sb]"); if(!li) return;
+    const sb = S.subs.find(x => x.id === li.dataset.sb); if(sb) mut(() => subCycle(sb, no));
+  };
   const step = d => { if(order.length < 2) return; go("student", { stu:order[(pos + d + order.length) % order.length] }); };
   $("#prev").onclick = () => step(-1); $("#next").onclick = () => step(1);
   $("#copy").onclick = () => {
@@ -1587,7 +1639,8 @@ function pgStudent(){
     const text = `${no ? no + "번 " : ""}${s.name || ""}` + (s.memo ? `\n메모: ${s.memo}` : "")
       + sec("출결", att.slice().sort(by).map(a => `${fmtMD(a.date)} ${a.type || ""} ${a.memo || ""}`.trim()))
       + sec("상담", cns.slice().sort(by).map(a => `${fmtMD(a.date)} ${a.topic || ""}${a.content ? " — " + a.content : ""}`.trim()))
-      + sec("특이사항", nts.slice().sort(by).map(a => `${fmtMD(a.date)} ${a.cat ? "(" + a.cat + ") " : ""}${a.content || ""}`.trim()));
+      + sec("특이사항", nts.slice().sort(by).map(a => `${fmtMD(a.date)} ${a.cat ? "(" + a.cat + ") " : ""}${a.content || ""}`.trim()))
+      + sec("안 낸 제출물", subLeft(no).map(sb => `${fmtMD(sb.date)} ${sb.name} — ${subGet(sb,no)}${(sb.nt || {})[no] ? " (" + sb.nt[no] + ")" : ""}`));
     (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast("기록을 복사했습니다"), () => toast("복사하지 못했습니다"));
   };
   const info = [["no","번호"],["name","이름"],["memo","메모"]].map(([k,label]) => ({ k, label }));
@@ -1599,11 +1652,91 @@ function pgStudent(){
 }
 
 
+/* ----- 제출물 확인 (기존 Planique 1.x '제출물 확인' 참고) -----
+   S.subs = [{ id, date, name, st:{번호:"제출"|"미완성"}, nt:{번호:비고} }] — 상태가 없으면 미제출 */
+const SUB_ST = ["미제출","제출","미완성"];
+const SUB_CLS = { "제출":"sb-y", "미제출":"sb-n", "미완성":"sb-p" };
+function subNorm(v){
+  v = String(v ?? "").trim();
+  if(/^미완/.test(v) || v === "△") return "미완성";
+  if(/^(제출|완료|o|ㅇ|v|y|1|✓|✔|○)$/i.test(v)) return "제출";
+  return "미제출";
+}
+const subGet = (sb,no) => (sb.st || {})[no] || "미제출";
+function subSet(sb,no,v){ v = subNorm(v); sb.st = sb.st || {}; if(v === "미제출") delete sb.st[no]; else sb.st[no] = v; }
+const subCycle = (sb,no) => subSet(sb, no, { "미제출":"제출", "제출":"미완성", "미완성":"미제출" }[subGet(sb,no)]);
+const subRoster = () => S.students.filter(s => String(s.no ?? "") !== "").sort((a,b) => (Number(a.no) || 1e9) - (Number(b.no) || 1e9));
+const subSorted = () => S.subs.slice().sort((a,b) => (b.date || "").localeCompare(a.date || ""));
+function subCount(sb, roster){ const n = { "제출":0, "미제출":0, "미완성":0 }; roster.forEach(s => n[subGet(sb, String(s.no))]++); return n; }
+const subLeft = no => subSorted().filter(sb => subGet(sb,no) !== "제출");
+function stuSubsHTML(no){
+  if(!S.subs.length) return `<div class="empty">등록된 제출물이 없습니다.</div>`;
+  return `<ul class="pl sb-pl">${subSorted().map(sb => { const v = subGet(sb,no), nt = (sb.nt || {})[no]; return `<li data-sb="${sb.id}" title="누르면 상태가 바뀝니다"><span class="d">${md(sb.date)}</span><span class="x">${esc(sb.name || "(이름 없음)")}${nt ? ` <em>· ${esc(nt)}</em>` : ""}</span><i class="sb-chip ${SUB_CLS[v]}">${v}</i></li>`; }).join("")}</ul>
+    <p class="hint">상태를 누를 때마다 미제출 → 제출 → 미완성으로 바뀝니다.</p>`;
+}
+function pgSubs(){
+  const roster = subRoster(), open = ui.subOpen || (ui.subOpen = new Set()), filt = ui.subFilter || "all";
+  const all = subSorted(), shown = all.filter(sb => filt === "all" || subCount(sb,roster)["제출"] < roster.length);
+  const item = sb => {
+    const n = subCount(sb,roster), pct = roster.length ? Math.round(n["제출"] / roster.length * 100) : 0, isOpen = open.has(sb.id);
+    const left = st => roster.filter(s => subGet(sb, String(s.no)) === st).map(s => `${s.no}번 ${s.name || ""}`.trim());
+    return `<section class="sb${isOpen ? " open" : ""}" data-id="${sb.id}">
+      <div class="sb-h" data-tog><span class="caret">›</span><b>${esc(sb.name || "(이름 없음)")}</b><span class="d">${fmtMD(sb.date)}</span>
+        <span class="sb-c"><i class="sb-chip sb-y">제출 ${n["제출"]}</i><i class="sb-chip sb-n">미제출 ${n["미제출"]}</i>${n["미완성"] ? `<i class="sb-chip sb-p">미완성 ${n["미완성"]}</i>` : ""}</span>
+        <span class="sb-bar" title="${pct}% 제출"><i style="width:${pct}%"></i></span></div>
+      ${isOpen ? `<div class="sb-b">
+        <div class="row sb-tool"><label class="ev-f">날짜 <input type="date" data-f="date" value="${esc(sb.date)}"></label><label class="ev-f">이름 <input data-f="name" value="${esc(sb.name)}"></label>
+          <span class="row" style="margin-left:auto"><button class="btn" data-act="all">모두 제출</button><button class="btn" data-act="copy">미제출 명단 복사</button><button class="btn danger" data-act="del">항목 삭제</button></span></div>
+        ${n["미제출"] + n["미완성"] ? `<p class="sb-left">${n["미제출"] ? `<b>미제출</b> ${esc(left("미제출").join(", "))}` : ""}${n["미제출"] && n["미완성"] ? "<br>" : ""}${n["미완성"] ? `<b>미완성</b> ${esc(left("미완성").join(", "))}` : ""}</p>` : roster.length ? `<p class="sb-left ok">모두 제출했습니다.</p>` : ""}
+        <div id="g-sb-${sb.id}"></div></div>` : ""}
+    </section>`;
+  };
+  V().innerHTML = `<div id="sbRoot"><div class="page-head"><h1>제출물</h1><span class="desc">항목을 눌러 펼치고, 상태 칸을 누를 때마다 미제출 → 제출 → 미완성으로 바뀝니다.</span>
+      <div class="row sp"><div class="seg" id="sbFilt"><button data-f="all" class="${filt === "all" ? "on" : ""}">전체 ${all.length}</button><button data-f="left" class="${filt === "left" ? "on" : ""}">덜 걷힌 항목만</button></div></div></div>
+    <form class="quick sb-add" id="sbAdd"><input type="date" id="sbDate" value="${TODAY}" aria-label="날짜"><input id="sbName" placeholder="제출물 이름 (예: 독서기록장, 수학 익힘책) 입력하고 Enter" autocomplete="off"><button class="btn pri">항목 추가</button></form>
+    ${roster.length ? "" : `<div class="panel" style="margin-bottom:8px"><div class="empty">학생 명단에 번호와 이름을 먼저 넣어 주세요. <button class="more" data-go="students" style="border:0;background:none;color:var(--acc)">학생 명단으로 ›</button></div></div>`}
+    ${shown.length ? shown.map(item).join("") : `<div class="panel"><div class="empty">${all.length ? "모든 항목을 다 걷었습니다." : "등록된 제출물이 없습니다. 위에서 항목을 추가하세요."}</div></div>`}</div>`;
+  const root = $("#sbRoot"), find = el => S.subs.find(x => x.id === el.closest(".sb").dataset.id);
+  $("#sbAdd").onsubmit = e => {
+    e.preventDefault();
+    const name = $("#sbName").value.trim(), date = $("#sbDate").value || TODAY;
+    if(!name){ $("#sbName").focus(); return; }
+    const sb = { id:uid(), date, name, st:{}, nt:{} };
+    open.add(sb.id); ui.subFilter = "all";
+    mut(() => S.subs.push(sb)); toast(`'${name}' 항목을 추가했습니다`);
+  };
+  $("#sbFilt").onclick = e => { const b = e.target.closest("button"); if(b){ ui.subFilter = b.dataset.f; render(); } };
+  root.addEventListener("click", e => {
+    const g = e.target.closest("[data-go]"); if(g) return go(g.dataset.go);
+    const h = e.target.closest("[data-tog]");
+    if(h){ const id = h.closest(".sb").dataset.id; open.has(id) ? open.delete(id) : open.add(id); return render(); }
+    const a = e.target.closest("[data-act]"); if(!a) return;
+    const sb = find(a);
+    if(a.dataset.act === "all"){ if(confirm(`'${sb.name}' — 모든 학생을 제출로 표시할까요?`)) mut(() => roster.forEach(s => subSet(sb, String(s.no), "제출"))); }
+    else if(a.dataset.act === "del"){ if(confirm(`'${sb.name}' 항목과 학생별 기록을 삭제할까요?`)) mut(() => { S.subs.splice(S.subs.indexOf(sb), 1); open.delete(sb.id); }); }
+    else if(a.dataset.act === "copy"){
+      const part = st => { const l = roster.filter(s => subGet(sb, String(s.no)) === st).map(s => `${s.no}번 ${s.name || ""}`.trim()); return l.length ? `${st} ${l.length}명: ${l.join(", ")}` : ""; };
+      const t = [`${sb.name} (${md(sb.date)})`, part("미제출"), part("미완성")].filter(Boolean).join("\n");
+      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("미제출 명단을 복사했습니다"), () => toast("복사하지 못했습니다"));
+    }
+  });
+  root.addEventListener("change", e => { const f = e.target.closest("[data-f]"); if(!f || !f.closest(".sb")) return; const sb = find(f), v = f.value.trim(); if(!v) return render(); mut(() => { sb[f.dataset.f] = v; }); });
+  all.filter(sb => open.has(sb.id) && shown.includes(sb)).forEach(sb => {
+    if(!roster.length) return;
+    const no = s => String(s.no);
+    new Grid($(`#g-sb-${sb.id}`), { id:"sb-" + sb.id, rows:() => roster, cols:[
+      { label:"번호", w:48, type:"ro", al:"c", get:no },
+      { label:"이름", w:84, type:"ro", get:s => s.name || "", cls:(s,v) => v ? "lnk" : "", click:s => go("student", { stu:S.students.indexOf(s) }) },
+      { label:"상태", w:84, al:"c", tip:"누르면 미제출 → 제출 → 미완성", list:SUB_ST, get:s => subGet(sb, no(s)), set:(s,v) => subSet(sb, no(s), v), cls:(s,v) => SUB_CLS[v] || "", click:s => mut(() => subCycle(sb, no(s))) },
+      { label:"비고", get:s => (sb.nt || {})[no(s)] || "", set:(s,v) => { sb.nt = sb.nt || {}; if(String(v).trim()) sb.nt[no(s)] = v; else delete sb.nt[no(s)]; } } ]});
+  });
+}
+
 /* 기존 Planique(1.x) 자료에서 명단·출결·상담만 가져오기. 이미 있는 기록은 건너뜀 */
 function importOld(obj){
   const st = obj && obj._meta && obj.state ? obj.state : obj;
   if(!st || !Array.isArray(st.students)){ toast("기존 Planique 백업 파일이 아닙니다"); return; }
-  const byId = new Map(st.students.map(s => [s.id, s])), no = s => String(s.no ?? ""), n = [0,0,0,0];
+  const byId = new Map(st.students.map(s => [s.id, s])), no = s => String(s.no ?? ""), n = [0,0,0,0,0];
   const has = (arr,o) => arr.some(x => Object.keys(o).every(k => String(x[k] ?? "") === String(o[k] ?? "")));
   mut(() => {
     st.students.slice().sort((a,b) => (Number(a.no) || 0) - (Number(b.no) || 0)).forEach(s => {
@@ -1629,8 +1762,16 @@ function importOld(obj){
       const o = { date:c.date || "", no:no(s), topic, content:c.content || "" };
       if(!has(S.counsels,o)){ S.counsels.push(o); n[2]++; }
     });
+    // 제출물: 1.x는 학생 id로, 2.x는 번호로 기록. 같은 날짜·이름 항목이 있으면 비어 있는 칸만 채움
+    (st.submissions || []).forEach(o => {
+      if(!o || !o.name) return;
+      let sb = S.subs.find(x => x.name === o.name && x.date === (o.date || ""));
+      if(!sb){ sb = { id:uid(), date:o.date || "", name:o.name, st:{}, nt:{} }; S.subs.push(sb); n[4]++; }
+      Object.entries(o.statuses || {}).forEach(([id,v]) => { const s = byId.get(id), k = s && no(s); if(k && !(k in sb.st) && subNorm(v) !== "미제출") sb.st[k] = subNorm(v); });
+      Object.entries(o.notes || {}).forEach(([id,v]) => { const s = byId.get(id), k = s && no(s); if(k && v && !sb.nt[k]) sb.nt[k] = v; });
+    });
   });
-  toast(`명단 ${n[0]}명 · 출결 ${n[1]}건 · 상담 ${n[2]}건 · 특이사항 ${n[3]}건을 가져왔습니다`);
+  toast(`명단 ${n[0]}명 · 출결 ${n[1]}건 · 상담 ${n[2]}건 · 특이사항 ${n[3]}건 · 제출물 ${n[4]}개를 가져왔습니다`);
 }
 
 /* ----- 컨설팅·연수 ----- */
@@ -1984,8 +2125,8 @@ function pgSettings(){
     const msg = await window.PlaniqueCloud.changePin(cur, n1);
     toast(msg); if(msg.startsWith("PIN을 바꿨")) e.target.reset();
   };
-  $("#file").onchange = e => { const f = e.target.files[0]; if(!f) return; f.text().then(t => { try { const d = JSON.parse(t); if(!d.set || !d.tt) throw 0; mut(() => { S = d; S.meta = S.meta || { versions:[] }; S.notes = S.notes || []; }); toast("백업을 불러왔습니다"); } catch(err){ toast("Planique 백업 파일이 아닙니다"); } }); };
-  $("#reset").onclick = () => { if(confirm("지금까지 입력한 내용을 지우고 처음 상태(시트 기준 자료)로 돌릴까요?")) mut(() => { const v = S.meta; S = seedState(); S.meta = v; S.notes = []; }); };
+  $("#file").onchange = e => { const f = e.target.files[0]; if(!f) return; f.text().then(t => { try { const d = JSON.parse(t); if(!d.set || !d.tt) throw 0; mut(() => { S = d; S.meta = S.meta || { versions:[] }; S.notes = S.notes || []; S.subs = S.subs || []; }); toast("백업을 불러왔습니다"); } catch(err){ toast("Planique 백업 파일이 아닙니다"); } }); };
+  $("#reset").onclick = () => { if(confirm("지금까지 입력한 내용을 지우고 처음 상태(시트 기준 자료)로 돌릴까요?")) mut(() => { const v = S.meta; S = seedState(); S.meta = v; S.notes = []; S.subs = []; }); };
 }
 
 /* ---------- 시작 ---------- */
