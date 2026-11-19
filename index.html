@@ -274,6 +274,11 @@ textarea.memo:focus{border-color:var(--acc)}
 .ev-rate b{font-weight:600}
 .ev-rate span{color:var(--faint)}
 @media (max-width:1080px){ .ev-wrap{grid-template-columns:1fr} }
+/* 상담 대상 */
+.grid td.who-p{color:var(--blue);font-weight:600}
+.grid td.ov-auto{color:var(--faint)}
+.grid td.who-p.ov-auto{color:#8aa3bd}
+.panel>h2 .cns-n{font-weight:500;font-size:12px}
 /* 제출물 */
 .sb-add{margin:0 0 12px}
 .sb-add #sbName{flex:1}
@@ -374,10 +379,15 @@ textarea.memo:focus{border-color:var(--acc)}
    데이터는 이 브라우저(localStorage)에 먼저 저장되고,
    Firebase(Firestore) appState/planique2 문서에 동기화됩니다 (맨 아래 module 스크립트).
    ============================================================ */
-const APP_VERSION = "2.7.0";
+const APP_VERSION = "2.7.1";
 // 버전을 올릴 때 여기에 한 묶음 추가하면 설정 > 패치 노트에 자동으로 나타나고,
 // 이 기기에서 처음 실행된 날짜가 함께 기록됩니다.
 const PATCH_NOTES = [
+  { ver:"2.7.1", date:"2026-11-19", items:[
+    "상담 기록에 '대상'(학생/학부모) 칸 추가 — 비워 두면 주제에 학부모·보호자가 있는지로 자동 판단 (흐린 글씨)",
+    "상담 횟수를 학생 상담·학부모 상담으로 나눠 표시: 학생 명단 '기록' 열, 학생 세부 기록, 상담 표 제목, 달력 점, 기록 복사",
+    "다면평가 상담 실적도 '대상' 칸 기준으로 학생·학부모를 나눔",
+  ]},
   { ver:"2.7.0", date:"2026-11-18", items:[
     "제출물 화면 추가 (기존 Planique '제출물 확인' 참고): 항목(날짜·이름)마다 펼쳐서 학생별 제출·미제출·미완성과 비고 기록",
     "상태 칸을 누를 때마다 미제출 → 제출 → 미완성, '모두 제출', 미제출 명단 복사, 덜 걷힌 항목만 보기",
@@ -1311,7 +1321,7 @@ function calHTML(y,m){
     const dt = new Date(start); dt.setDate(start.getDate()+i);
     const d = iso(dt), w = dt.getDay(), hol = c.hol.get(d), school = c.daySet.has(d);
     const cls = ["cell", dt.getMonth() !== m ? "out" : "", w===0?"sun":w===6?"sat":"", hol?"hol":"", !school?"off":"", school && isSubst(d)?"subst":"", d===TODAY?"tdy":"", d===ui.sel?"selday":""].join(" ");
-    const dots = (c.att.has(d) ? `<i class="dot att" title="출결 ${c.att.get(d).length}건"></i>` : "") + (c.cns.has(d) ? `<i class="dot cns" title="상담 ${c.cns.get(d).length}건"></i>` : "") + (c.nts.has(d) ? `<i class="dot nts" title="특이사항 ${c.nts.get(d).length}건"></i>` : "") + (c.trn.has(d) ? `<i class="dot trn" title="컨설팅·연수"></i>` : "");
+    const dots = (c.att.has(d) ? `<i class="dot att" title="출결 ${c.att.get(d).length}건"></i>` : "") + (c.cns.has(d) ? `<i class="dot cns" title="상담 ${c.cns.get(d).length}건 (${cnsSplitTxt(c.cns.get(d))})"></i>` : "") + (c.nts.has(d) ? `<i class="dot nts" title="특이사항 ${c.nts.get(d).length}건"></i>` : "") + (c.trn.has(d) ? `<i class="dot trn" title="컨설팅·연수"></i>` : "");
     const tt = (S.tt[d] || []).filter(x => x).join(" ");
     const lines = [];
     for(let p = 1; p <= NP; p++){ const a = ttGet(d,p) && d >= TODAY ? progGet(d,p,"assess") : ""; if(a) lines.push(`<div class="ev as">${esc(a.replace(/^수행평가:\s*/,"수행 · "))}</div>`); }
@@ -1335,7 +1345,7 @@ function dayPanel(){
   if(todos.length) h += `<div class="lbl">챙길 일</div><ul class="pl">${todos.map(t => `<li class="chk${isDone(t) ? " done" : ""}" data-id="${t.id}"><i class="cb${isDone(t) ? " on" : ""}"></i><span>${esc(t.title)}</span></li>`).join("")}</ul>`;
   const evs = [...eventsOn(d).map(e => e.title + (e.period ? ` · ${e.period}` : "")), ...(c.trn.get(d) || []).map(t => `${t.kind || "연수"} · ${t.title}${t.org ? ` (${t.org})` : ""}`)];
   if(evs.length) h += `<div class="lbl">일정</div><ul class="pl">${evs.map(e => `<li><span>${esc(e)}</span></li>`).join("")}</ul>`;
-  const st = [...(c.att.get(d) || []).map(a => `<li><i class="dot att"></i><span>${esc(a.no)}번 ${esc(stuName(a.no))} ${esc(a.type || "")} ${esc(a.memo || "")}</span></li>`), ...(c.cns.get(d) || []).map(a => `<li><i class="dot cns"></i><span>${esc(a.no)}번 ${esc(stuName(a.no))} 상담 · ${esc(a.topic || "")}</span></li>`), ...(c.nts.get(d) || []).map(a => `<li><i class="dot nts"></i><span>${esc(a.no)}번 ${esc(stuName(a.no))} ${esc(a.cat || "특이사항")} · ${esc(a.content || "")}</span></li>`)];
+  const st = [...(c.att.get(d) || []).map(a => `<li><i class="dot att"></i><span>${esc(a.no)}번 ${esc(stuName(a.no))} ${esc(a.type || "")} ${esc(a.memo || "")}</span></li>`), ...(c.cns.get(d) || []).map(a => `<li><i class="dot cns"></i><span>${esc(a.no)}번 ${esc(stuName(a.no))} ${cnsWho(a) === "학부모" ? "학부모 상담" : "상담"} · ${esc(a.topic || "")}</span></li>`), ...(c.nts.get(d) || []).map(a => `<li><i class="dot nts"></i><span>${esc(a.no)}번 ${esc(stuName(a.no))} ${esc(a.cat || "특이사항")} · ${esc(a.content || "")}</span></li>`)];
   if(st.length) h += `<div class="lbl">학생</div><ul class="pl">${st.join("")}</ul>`;
   h += `<div class="lbl">하루 메모</div><textarea class="memo" id="dp-memo" placeholder="할 일과 별개로, 그날 적어 둘 것">${esc(S.dayMemos[d] || "")}</textarea>`;
   const el = $("#dp"); el.innerHTML = h;
@@ -1375,7 +1385,7 @@ function pgDay(){
   new Grid($("#g-datt"), { id:"dayAtt", ...src(S.attendance, () => ({ date:d, no:"", type:"", memo:"" }), a => a.date === d), empty:emptyBy("no","type","memo"), cols:[
     COL_NO, COL_NAME, { key:"type", label:"구분", w:84, list:ATT_TYPES }, { key:"memo", label:"사유·메모" } ]});
   new Grid($("#g-dcns"), { id:"dayCns", ...src(S.counsels, () => ({ date:d, no:"", topic:"", content:"" }), a => a.date === d), empty:emptyBy("no","topic","content"), cols:[
-    COL_NO, COL_NAME, { key:"topic", label:"주제", w:100 }, { key:"content", label:"내용" } ]});
+    COL_NO, COL_NAME, COL_WHO, { key:"topic", label:"주제", w:100 }, { key:"content", label:"내용" } ]});
   new Grid($("#g-dnts"), { id:"dayNts", ...src(S.notes, () => ({ date:d, no:"", cat:"", content:"" }), a => a.date === d), empty:emptyBy("no","cat","content"), cols:[
     COL_NO, COL_NAME, { key:"cat", label:"분류", w:84, list:NOTE_CATS }, { key:"content", label:"내용" } ]});
 }
@@ -1537,6 +1547,13 @@ function pgEvents(){
 /* ----- 학생 ----- */
 const NOTE_CATS = ["건강","생활","학습","교우관계","가정","칭찬","기타"];
 const emptyBy = (...keys) => row => keys.every(k => !row[k]);
+/* 상담 대상: '대상' 칸(who)이 비어 있으면 주제에 학부모·보호자가 들어 있는지로 판단 */
+const cnsWho = c => c.who || (/학부모|보호자/.test(c.topic || "") ? "학부모" : "학생");
+const cnsSplit = list => { let s = 0, p = 0; list.forEach(c => cnsWho(c) === "학부모" ? p++ : s++); return { s, p }; };
+const cnsSplitTxt = list => { const n = cnsSplit(list); return `학생 ${n.s} · 학부모 ${n.p}`; };
+const COL_WHO = { label:"대상", w:66, al:"c", list:["학생","학부모"], tip:"학생 상담 / 학부모 상담 — 비우면 주제로 자동 판단",
+  get:cnsWho, set:(c,v) => { v = String(v).trim(); if(!v) delete c.who; else c.who = /학부모|보호자|부모|^ㅂ/.test(v) ? "학부모" : "학생"; },
+  cls:(c,v) => (v === "학부모" ? "who-p" : "") + (c.who ? "" : " ov-auto") };
 const COL_NO = { key:"no", label:"번호", w:48, al:"c" };
 const COL_NAME = { label:"이름", w:70, type:"ro", tip:"이름을 누르면 학생 기록으로 이동", get:r => stuName(r.no), cls:(r,v) => v ? "lnk" : "", click:r => openStu(r.no) };
 function openStu(no){
@@ -1562,7 +1579,7 @@ function pgStudents(){
       <p class="hint">내용을 모두 지운 행은 자동으로 사라집니다. 번호·이름 열을 복사해 붙여넣을 수 있고, 이름을 고치려면 이름을 눌러 학생 기록에서 고치거나 방향키로 칸에 가서 입력하세요.</p></div>
     <div style="display:grid;gap:14px;min-width:0">
       <div class="panel"><h2><i class="dot att"></i>출결</h2><div id="g-att"></div></div>
-      <div class="panel"><h2><i class="dot cns"></i>상담</h2><div id="g-cns"></div></div>
+      <div class="panel"><h2><i class="dot cns"></i>상담 <span class="meta cns-n">${cnsSplitTxt(S.counsels.filter(c => c.no || c.topic || c.content))}</span></h2><div id="g-cns"></div></div>
       <div class="panel"><h2><i class="dot nts"></i>특이사항</h2><div id="g-nts"></div></div>
     </div>
   </div>`;
@@ -1583,12 +1600,12 @@ function pgStudents(){
     { key:"no", label:"번호", w:48, al:"c", set:setStuNo },
     { key:"name", label:"이름", w:84, tip:"이름을 누르면 학생 기록으로 이동", cls:(s,v) => v ? "lnk" : "", click:s => go("student", { stu:S.students.indexOf(s) }) },
     { key:"memo", label:"메모" },
-    { label:"기록", w:132, type:"ro", get:s => { if(s.no === "" || s.no == null) return ""; const a = cnt(c.att,s.no), b = cnt(c.cns,s.no), n = cnt(c.nts,s.no); return [a && `출결 ${a}`, b && `상담 ${b}`, n && `특이 ${n}`].filter(Boolean).join(" · "); } },
+    { label:"기록", w:190, type:"ro", get:s => { if(s.no === "" || s.no == null) return ""; const a = cnt(c.att,s.no), n = cnt(c.nts,s.no), b = cnsSplit(S.counsels.filter(r => String(r.no) === String(s.no))); return [a && `출결 ${a}`, b.s && `학생상담 ${b.s}`, b.p && `학부모 ${b.p}`, n && `특이 ${n}`].filter(Boolean).join(" · "); } },
     { label:"안 낸 것", w:70, type:"ro", al:"c", tip:"제출물 중 미제출·미완성 수", get:s => { if(s.no === "" || s.no == null) return ""; const k = subLeft(String(s.no)).length; return k ? k + "건" : ""; }, cls:(s,v) => v ? "neg" : "" } ]});
   $("#stuSort").onclick = () => mut(() => S.students.sort((a,b) => (Number(a.no) || 1e9) - (Number(b.no) || 1e9)));
   $("#stuDel").onclick = () => { const r = gs.range(), rows = S.students.slice(r.r0, r.r1+1); if(!rows.length) return; if(confirm(`${rows.map(s => (s.no ? s.no + "번 " : "") + (s.name || "")).join(", ")} — 명단에서 삭제할까요?\n(출결·상담 기록은 남습니다)`)) mut(() => { S.students = S.students.filter(s => !rows.includes(s)); }); };
   new Grid($("#g-att"), { id:"att", maxH:h, ...src(S.attendance, () => ({ date:"", no:"", type:"", memo:"" })), empty:emptyBy("date","no","type","memo"), cols:[ { key:"date", label:"날짜", w:90, type:"date" }, COL_NO, COL_NAME, { key:"type", label:"구분", w:80, list:ATT_TYPES }, { key:"memo", label:"사유·메모" } ]});
-  new Grid($("#g-cns"), { id:"cns", maxH:h, ...src(S.counsels, () => ({ date:"", no:"", topic:"", content:"" })), empty:emptyBy("date","no","topic","content"), cols:[ { key:"date", label:"날짜", w:90, type:"date" }, COL_NO, COL_NAME, { key:"topic", label:"주제", w:120 }, { key:"content", label:"내용" } ]});
+  new Grid($("#g-cns"), { id:"cns", maxH:h, ...src(S.counsels, () => ({ date:"", no:"", topic:"", content:"" })), empty:emptyBy("date","no","topic","content"), cols:[ { key:"date", label:"날짜", w:90, type:"date" }, COL_NO, COL_NAME, COL_WHO, { key:"topic", label:"주제", w:120 }, { key:"content", label:"내용" } ]});
   new Grid($("#g-nts"), { id:"nts", maxH:h, ...src(S.notes, () => ({ date:"", no:"", cat:"", content:"" })), empty:emptyBy("date","no","cat","content"), cols:[ { key:"date", label:"날짜", w:90, type:"date" }, COL_NO, COL_NAME, { key:"cat", label:"분류", w:90, list:NOTE_CATS }, { key:"content", label:"내용" } ]});
 }
 
@@ -1610,7 +1627,7 @@ function pgStudent(){
     </div>
     <div class="stats">
       ${["결석","지각","조퇴"].map(k => `<div><b>${cnt[k] || 0}</b>${k}</div>`).join("")}
-      <div><b>${att.length - (cnt["결석"] || 0) - (cnt["지각"] || 0) - (cnt["조퇴"] || 0)}</b>그 밖의 출결</div><div><b>${cns.length}</b>상담</div><div><b>${nts.length}</b>특이사항</div>
+      <div><b>${att.length - (cnt["결석"] || 0) - (cnt["지각"] || 0) - (cnt["조퇴"] || 0)}</b>그 밖의 출결</div><div><b>${cnsSplit(cns).s}</b>학생 상담</div><div><b>${cnsSplit(cns).p}</b>학부모 상담</div><div><b>${nts.length}</b>특이사항</div>
       ${S.subs.length && no ? `<div><b class="${subLeft(no).length ? "neg" : ""}">${subLeft(no).length}</b>안 낸 제출물</div>` : ""}
     </div>
     <div class="two" style="grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr)">
@@ -1620,7 +1637,7 @@ function pgStudent(){
       </div>
       <div style="display:grid;gap:14px;min-width:0">${no === "" ? `<div class="panel"><div class="empty">기본 정보에 번호를 적어야 출결·상담·특이사항을 연결할 수 있습니다.</div></div>` : `
         <div class="panel"><h2><i class="dot att"></i>출결</h2><div id="g-satt"></div></div>
-        <div class="panel"><h2><i class="dot cns"></i>상담 기록</h2><div id="g-scns"></div></div>
+        <div class="panel"><h2><i class="dot cns"></i>상담 기록 <span class="meta cns-n">${cnsSplitTxt(cns)}</span></h2><div id="g-scns"></div></div>
         <div class="panel"><h2><i class="dot nts"></i>특이사항</h2><div id="g-snts"></div></div>
         <div class="panel"><h2>제출물 <button class="more" data-go="subs">전체 보기</button></h2>${stuSubsHTML(no)}</div>`}
       </div>
@@ -1638,7 +1655,7 @@ function pgStudent(){
     const by = (a,b) => (a.date || "") < (b.date || "") ? -1 : 1;
     const text = `${no ? no + "번 " : ""}${s.name || ""}` + (s.memo ? `\n메모: ${s.memo}` : "")
       + sec("출결", att.slice().sort(by).map(a => `${fmtMD(a.date)} ${a.type || ""} ${a.memo || ""}`.trim()))
-      + sec("상담", cns.slice().sort(by).map(a => `${fmtMD(a.date)} ${a.topic || ""}${a.content ? " — " + a.content : ""}`.trim()))
+      + sec(`상담 (${cnsSplitTxt(cns)})`, cns.slice().sort(by).map(a => `${fmtMD(a.date)} [${cnsWho(a)}] ${a.topic || ""}${a.content ? " — " + a.content : ""}`.trim()))
       + sec("특이사항", nts.slice().sort(by).map(a => `${fmtMD(a.date)} ${a.cat ? "(" + a.cat + ") " : ""}${a.content || ""}`.trim()))
       + sec("안 낸 제출물", subLeft(no).map(sb => `${fmtMD(sb.date)} ${sb.name} — ${subGet(sb,no)}${(sb.nt || {})[no] ? " (" + sb.nt[no] + ")" : ""}`));
     (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast("기록을 복사했습니다"), () => toast("복사하지 못했습니다"));
@@ -1647,7 +1664,7 @@ function pgStudent(){
   new Grid($("#g-info"), { id:"stuInfo", rows:() => info, cols:[ { label:"항목", w:64, type:"ro", get:r => r.label }, { label:"내용", get:r => s[r.k], set:(r,v) => { if(r.k === "no") setStuNo(s,v); else s[r.k] = v; } } ]});
   if(no === "") return;
   new Grid($("#g-satt"), { id:"sAtt", maxH:260, ...src(S.attendance, () => ({ date:"", no, type:"", memo:"" }), mine), empty:emptyBy("date","type","memo"), cols:[ { key:"date", label:"날짜", w:96, type:"date" }, { key:"type", label:"구분", w:90, list:ATT_TYPES }, { key:"memo", label:"사유·메모" } ]});
-  new Grid($("#g-scns"), { id:"sCns", maxH:300, ...src(S.counsels, () => ({ date:"", no, topic:"", content:"" }), mine), empty:emptyBy("date","topic","content"), cols:[ { key:"date", label:"날짜", w:96, type:"date" }, { key:"topic", label:"주제", w:150 }, { key:"content", label:"내용" } ]});
+  new Grid($("#g-scns"), { id:"sCns", maxH:300, ...src(S.counsels, () => ({ date:"", no, topic:"", content:"" }), mine), empty:emptyBy("date","topic","content"), cols:[ { key:"date", label:"날짜", w:96, type:"date" }, COL_WHO, { key:"topic", label:"주제", w:150 }, { key:"content", label:"내용" } ]});
   new Grid($("#g-snts"), { id:"sNts", maxH:300, ...src(S.notes, () => ({ date:"", no, cat:"", content:"" }), mine), empty:emptyBy("date","cat","content"), cols:[ { key:"date", label:"날짜", w:96, type:"date" }, { key:"cat", label:"분류", w:90, list:NOTE_CATS }, { key:"content", label:"내용" } ]});
 }
 
@@ -1909,7 +1926,7 @@ function evData(){
   const inP = d => d && d >= e.from && d <= e.to;
   const byDate = (a,b) => (a.date || "") < (b.date || "") ? -1 : 1;
   const trn = kinds => S.trainings.filter(t => t.done && inP(t.date) && kinds.includes(t.kind)).sort(byDate);
-  const cns = S.counsels.filter(c => inP(c.date)).sort(byDate), isPar = c => /학부모|보호자/.test(c.topic || "");
+  const cns = S.counsels.filter(c => inP(c.date)).sort(byDate), isPar = c => cnsWho(c) === "학부모";
   const d = { e, months, open:trn(["공개수업"]), train:trn(["컨설팅","연수"]), cns, cnsPar:cns.filter(isPar), cnsStu:cns.filter(c => !isPar(c)) };
   const N = v => v === "" || v == null || isNaN(Number(v)) ? null : Number(v);
   const adj = k => Number(e[k]) || 0;
@@ -1938,7 +1955,7 @@ function evData(){
     ["나","생활지도",30,[
       count("나-1",d.cns,"cnsAdj","1) 학생 또는 학부모 상담실적","30회 이상 10 · 20회 이상~30회 미만 9 · 10회 미만 8",EV_T.cns,"회",{
         src:`학생 > 상담 기록 (학생 ${d.cnsStu.length} · 학부모 ${d.cnsPar.length})`, go:"students", li:cnsLi,
-        note:"기준표에 10~19회 칸이 없어 20회 미만은 8점으로 계산했습니다. 주제에 '학부모'나 '보호자'가 들어 있으면 학부모 상담으로 셉니다" }),
+        note:"기준표에 10~19회 칸이 없어 20회 미만은 8점으로 계산했습니다. 학생·학부모 구분은 상담 기록의 '대상' 칸을 따르고, 비어 있으면 주제에 '학부모'나 '보호자'가 들어 있는지로 판단합니다" }),
       sel("나-2","guide","2) 생활지도 곤란도",{ prorate:true }),
       sel("나-3","special","3) 통합 학급 및 특수 학급 담당",{ prorate:true }),
     ]],
