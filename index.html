@@ -314,6 +314,31 @@ textarea.memo:focus{border-color:var(--acc)}
 .sb-pl li .x{flex:1}
 .sb-pl li em{font-style:normal;color:var(--faint);font-size:12px}
 .sb-pl li:hover .x{text-decoration:underline}
+/* 평가 결과 */
+.gr-hi{background:var(--acc-w);color:var(--acc)}
+.gr-mid{background:var(--amber-w);color:var(--amber)}
+.gr-lo{background:var(--red-w);color:var(--red)}
+.gr-na{background:var(--head);color:var(--faint)}
+.gr-bar{flex:none;width:120px;height:7px;border-radius:4px;background:var(--line);overflow:hidden;display:flex}
+.gr-bar i{display:block;height:100%}
+.gr-bar .h{background:var(--acc)} .gr-bar .m{background:#d9a21b} .gr-bar .l{background:var(--red)}
+.gr-h .max{color:var(--faint);font-size:12px}
+.grid td.gr-hi,.grid td.gr-mid,.grid td.gr-lo{font-weight:600}
+.grid td.ro.gr-hi{background:var(--acc-w);color:var(--acc)}
+.grid td.ro.gr-mid{background:var(--amber-w);color:var(--amber)}
+.grid td.ro.gr-lo{background:var(--red-w);color:var(--red)}
+.gr-sum{width:100%;border-collapse:collapse;font-size:13px}
+.gr-sum th{font-weight:600;color:var(--mute);font-size:12px;text-align:left;padding:5px 8px;border-bottom:1px solid var(--line2);white-space:nowrap}
+.gr-sum td{padding:6px 8px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
+.gr-sum tr:last-child td{border-bottom:0}
+.gr-sum td.n{text-align:right}
+.gr-sum td.t{white-space:normal;min-width:120px}
+.gr-sum tr[data-open]{cursor:pointer}
+.gr-sum tr[data-open]:hover td{background:#faf9f6}
+.gr-add #grName{flex:1}
+.gr-add input[type=number]{width:80px}
+.gr-add select{height:30px;border:1px solid var(--line2);border-radius:5px;padding:0 6px;font:inherit;font-size:13px;background:var(--panel);color:var(--ink)}
+@media (max-width:640px){ .gr-bar{width:70px} .gr-add{flex-wrap:wrap} .gr-add #grName{flex:1 1 100%} }
 @media (max-width:640px){ .sb-bar{display:none} .sb-c{margin-left:0;flex-basis:100%;padding-left:20px} .sb-tool input[data-f=name]{width:150px} }
 /* 학급운영비 */
 .stats b.neg{color:var(--red)} .stats b.pos{color:var(--acc)}
@@ -381,10 +406,16 @@ textarea.memo:focus{border-color:var(--acc)}
    데이터는 이 브라우저(localStorage)에 먼저 저장되고,
    Firebase(Firestore) appState/planique2 문서에 동기화됩니다 (맨 아래 module 스크립트).
    ============================================================ */
-const APP_VERSION = "2.8.0";
+const APP_VERSION = "2.9.0";
 // 버전을 올릴 때 여기에 한 묶음 추가하면 설정 > 패치 노트에 자동으로 나타나고,
 // 이 기기에서 처음 실행된 날짜가 함께 기록됩니다.
 const PATCH_NOTES = [
+  { ver:"2.9.0", date:"2026-11-23", items:[
+    "평가 결과 화면 추가: 과목별 탭에서 평가 항목(날짜·이름·만점)을 만들고 전체 학생 점수 기록",
+    "점수 ÷ 만점으로 도달 정도 자동 계산 — 80% 이상 상, 60% 이상 중, 그 미만 하",
+    "그날 결석한 학생은 '결석' 체크 → 점수와 관계없이 '중'으로 표시",
+    "항목마다 상·중·하 인원과 전체 학생 대비 비율(%), 막대, 미입력 명단 / 과목별 '한눈에 보기' 표 / 결과 복사",
+  ]},
   { ver:"2.8.0", date:"2026-11-23", items:[
     "차시 목록 '선진행' 표시: 진도가 빨리 나가 미리 한 차시를 체크하면 진도·운영 계획 배정에서 빠지고, 차시 목록에는 가운데 줄이 그어진 채로 남음",
     "여러 줄을 골라 '선진행 표시/해제' 버튼으로 한꺼번에 표시하거나 풀 수 있음 (삭제와 달리 언제든 되돌릴 수 있음)",
@@ -1232,14 +1263,14 @@ document.addEventListener("keydown", e => { if((e.ctrlKey || e.metaKey) && (e.ke
 /* ============================================================
    화면
    ============================================================ */
-const PAGES = [["home","홈"],["tt","시간표"],["lessons","차시 목록"],["plan","진도"],["ops","운영 계획"],["hours","시수"],["todo","할 일"],["events","일정"],["students","학생"],["subs","제출물"],["training","컨설팅·연수"],["budget","학급운영비"],["eval","다면평가"],["settings","설정"]];
+const PAGES = [["home","홈"],["tt","시간표"],["lessons","차시 목록"],["plan","진도"],["ops","운영 계획"],["hours","시수"],["todo","할 일"],["events","일정"],["students","학생"],["subs","제출물"],["grades","평가 결과"],["training","컨설팅·연수"],["budget","학급운영비"],["eval","다면평가"],["settings","설정"]];
 function go(page, extra){ Object.assign(ui, extra || {}); ui.page = page; activeGridId = null; render(); scrollTo(0,0); }
 function openDay(d){ go("day", { day:d }); }
 function render(){
   cache = null;
   for(const k in grids) delete grids[k];
   $("#nav").innerHTML = PAGES.map(([id,label]) => `<button data-p="${id}" class="${ui.page === id || (id === "home" && ui.page === "day") || (id === "students" && ui.page === "student") ? "on" : ""}">${label}</button>`).join("");
-  ({ home:pgHome, day:pgDay, tt:pgTT, lessons:pgLessons, plan:pgPlan, ops:pgOps, hours:pgHours, todo:pgTodo, events:pgEvents, students:pgStudents, student:pgStudent, subs:pgSubs, training:pgTraining, budget:pgBudget, eval:pgEval, settings:pgSettings })[ui.page]();
+  ({ home:pgHome, day:pgDay, tt:pgTT, lessons:pgLessons, plan:pgPlan, ops:pgOps, hours:pgHours, todo:pgTodo, events:pgEvents, students:pgStudents, student:pgStudent, subs:pgSubs, grades:pgGrades, training:pgTraining, budget:pgBudget, eval:pgEval, settings:pgSettings })[ui.page]();
 }
 $("#nav").onclick = e => { const b = e.target.closest("button"); if(b) go(b.dataset.p); };
 $("#undoBtn").onclick = undo;
@@ -1680,6 +1711,107 @@ function pgStudent(){
   new Grid($("#g-snts"), { id:"sNts", maxH:300, ...src(S.notes, () => ({ date:"", no, cat:"", content:"" }), mine), empty:emptyBy("date","cat","content"), cols:[ { key:"date", label:"날짜", w:96, type:"date" }, { key:"cat", label:"분류", w:90, list:NOTE_CATS }, { key:"content", label:"내용" } ]});
 }
 
+
+/* ----- 평가 결과 -----
+   S.grades = [{ id, subj(과목 이름), date, name, max(만점), sc:{번호:점수}, abs:{번호:true}, nt:{번호:비고} }]
+   도달 정도 = 점수/만점 → 80% 이상 상, 60% 이상 중, 그 미만 하. 결석은 '중'. 점수가 없으면 미입력 */
+const GR_CLS = { "상":"gr-hi", "중":"gr-mid", "하":"gr-lo", "미입력":"gr-na" };
+const grList = () => S.grades || (S.grades = []);
+function grLv(g, no){
+  if((g.abs || {})[no]) return { lv:"중", abs:true, pct:null };
+  const v = (g.sc || {})[no], max = Number(g.max) || 0;
+  if(v === "" || v == null || !max) return { lv:"미입력", pct:null };
+  const pct = Number(v) / max * 100;
+  return { lv: pct >= 80 ? "상" : pct >= 60 ? "중" : "하", pct };
+}
+function grCount(g, roster){
+  const n = { "상":0, "중":0, "하":0, "미입력":0, abs:0, total:roster.length };
+  roster.forEach(s => { const r = grLv(g, String(s.no)); n[r.lv]++; if(r.abs) n.abs++; });
+  return n;
+}
+const grPct = (k,n) => n.total ? Math.round(n[k] / n.total * 100) : 0;
+function grChips(n){
+  return `<i class="sb-chip gr-hi">상 ${n["상"]} · ${grPct("상",n)}%</i><i class="sb-chip gr-mid">중 ${n["중"]} · ${grPct("중",n)}%${n.abs ? ` (결석 ${n.abs})` : ""}</i><i class="sb-chip gr-lo">하 ${n["하"]} · ${grPct("하",n)}%</i>${n["미입력"] ? `<i class="sb-chip gr-na">미입력 ${n["미입력"]}</i>` : ""}`;
+}
+const grBar = n => `<span class="gr-bar" title="상 ${grPct("상",n)}% · 중 ${grPct("중",n)}% · 하 ${grPct("하",n)}%"><i class="h" style="width:${grPct("상",n)}%"></i><i class="m" style="width:${grPct("중",n)}%"></i><i class="l" style="width:${grPct("하",n)}%"></i></span>`;
+function pgGrades(){
+  const roster = subRoster(), subjects = S.subjects.map(s => s.name).filter(Boolean), list = grList();
+  if(!ui.grSubj || (ui.grSubj !== "all" && !subjects.includes(ui.grSubj))) ui.grSubj = subjects[0] || "all";
+  const cur = ui.grSubj, open = ui.grOpen || (ui.grOpen = new Set());
+  const items = list.filter(g => cur === "all" || g.subj === cur).sort((a,b) => (b.date || "").localeCompare(a.date || ""));
+  const cnt = sj => list.filter(g => g.subj === sj).length;
+  const item = g => {
+    const n = grCount(g, roster), isOpen = open.has(g.id);
+    return `<section class="sb${isOpen ? " open" : ""}" data-id="${g.id}">
+      <div class="sb-h gr-h" data-tog><span class="caret">›</span>${cur === "all" ? `<span class="d">${esc(g.subj)}</span>` : ""}<b>${esc(g.name || "(이름 없음)")}</b><span class="d">${fmtMD(g.date)}</span><span class="max">만점 ${esc(g.max)}</span>
+        <span class="sb-c">${grChips(n)}</span>${grBar(n)}</div>
+      ${isOpen ? `<div class="sb-b">
+        <div class="row sb-tool"><label class="ev-f">과목 <select data-f="subj">${subjects.map(s => `<option${s === g.subj ? " selected" : ""}>${esc(s)}</option>`).join("")}</select></label><label class="ev-f">날짜 <input type="date" data-f="date" value="${esc(g.date)}"></label><label class="ev-f">이름 <input data-f="name" value="${esc(g.name)}"></label><label class="ev-f">만점 <input type="number" inputmode="decimal" min="0" step="any" data-f="max" value="${esc(g.max)}" style="width:72px"></label>
+          <span class="row" style="margin-left:auto"><button class="btn" data-act="copy">결과 복사</button><button class="btn danger" data-act="del">항목 삭제</button></span></div>
+        ${n["미입력"] ? `<p class="sb-left">미입력 ${n["미입력"]}명: ${esc(roster.filter(s => grLv(g, String(s.no)).lv === "미입력").map(s => `${s.no}번 ${s.name || ""}`.trim()).join(", "))}</p>` : ""}
+        <div id="g-gr-${g.id}"></div>
+        <p class="hint">점수를 적으면 도달 정도(점수 ÷ 만점)에 따라 80% 이상 상, 60% 이상 중, 그 미만 하로 자동 표시됩니다. 그날 결석한 학생은 '결석'을 체크하면 점수와 관계없이 '중'이 됩니다. 점수 열은 구글 시트·엑셀에서 복사해 붙여넣을 수 있습니다.</p></div>` : ""}
+    </section>`;
+  };
+  // 과목 전체 요약 (항목별 상·중·하 비율)
+  const sum = items.length ? `<div class="panel" style="margin-bottom:10px;overflow-x:auto"><h2>${cur === "all" ? "전체 과목" : esc(cur)} 한눈에 보기 <span class="meta" style="margin-left:auto">학생 ${roster.length}명 기준</span></h2>
+    <table class="gr-sum"><thead><tr><th>날짜</th>${cur === "all" ? "<th>과목</th>" : ""}<th>평가</th><th>만점</th><th>상</th><th>중</th><th>하</th><th>미입력</th><th></th></tr></thead><tbody>
+    ${items.map(g => { const n = grCount(g, roster); return `<tr data-open="${g.id}"><td>${md(g.date)}</td>${cur === "all" ? `<td>${esc(g.subj)}</td>` : ""}<td class="t">${esc(g.name)}</td><td class="n">${esc(g.max)}</td><td class="n" style="color:var(--acc)">${grPct("상",n)}%</td><td class="n" style="color:var(--amber)">${grPct("중",n)}%</td><td class="n" style="color:var(--red)">${grPct("하",n)}%</td><td class="n" style="color:var(--faint)">${n["미입력"] || ""}</td><td>${grBar(n)}</td></tr>`; }).join("")}
+    </tbody></table></div>` : "";
+  V().innerHTML = `<div id="grRoot"><div class="page-head"><h1>평가 결과</h1><span class="desc">과목별 평가 항목을 만들고 학생 점수를 적으면 상·중·하가 자동으로 정해집니다 (80% 이상 상 · 60% 이상 중 · 그 미만 하 · 결석은 중).</span></div>
+    <div class="tabs" id="grTabs">${subjects.map(s => `<button data-k="${esc(s)}" class="${s === cur ? "on" : ""}">${esc(s)}<i>${cnt(s) || ""}</i></button>`).join("")}<button data-k="all" class="${cur === "all" ? "on" : ""}">전체<i>${list.length || ""}</i></button></div>
+    <form class="quick gr-add" id="grAdd">${cur === "all" ? `<select id="grSubj" aria-label="과목">${subjects.map(s => `<option>${esc(s)}</option>`).join("")}</select>` : ""}<input type="date" id="grDate" value="${TODAY}" aria-label="날짜"><input id="grName" placeholder="평가 이름 (예: 4단원 단원평가, 수행평가 – 글쓰기)" autocomplete="off"><input type="number" id="grMax" inputmode="decimal" min="0" step="any" placeholder="만점" aria-label="만점"><button class="btn pri">항목 추가</button></form>
+    ${roster.length ? "" : `<div class="panel" style="margin-bottom:8px"><div class="empty">학생 명단에 번호와 이름을 먼저 넣어 주세요. <button class="more" data-go="students" style="border:0;background:none;color:var(--acc)">학생 명단으로 ›</button></div></div>`}
+    ${sum}
+    ${items.length ? items.map(item).join("") : `<div class="panel"><div class="empty">${cur === "all" ? "" : esc(cur) + " "}평가 항목이 없습니다. 위에서 평가 이름과 만점을 적고 추가하세요.</div></div>`}</div>`;
+  const root = $("#grRoot"), find = el => list.find(x => x.id === el.closest(".sb").dataset.id);
+  $("#grTabs").onclick = e => { const b = e.target.closest("button"); if(b){ ui.grSubj = b.dataset.k; render(); } };
+  $("#grAdd").onsubmit = e => {
+    e.preventDefault();
+    const name = $("#grName").value.trim(), max = toNum($("#grMax").value), subj = cur === "all" ? $("#grSubj").value : cur;
+    if(!name){ $("#grName").focus(); return; }
+    if(!(max > 0)){ toast("만점을 0보다 큰 숫자로 적어 주세요"); $("#grMax").focus(); return; }
+    const g = { id:uid(), subj, date:$("#grDate").value || TODAY, name, max, sc:{}, abs:{}, nt:{} };
+    open.add(g.id);
+    mut(() => list.push(g)); toast(`${subj} '${name}' 항목을 추가했습니다`);
+  };
+  root.addEventListener("click", e => {
+    const gg = e.target.closest("[data-go]"); if(gg) return go(gg.dataset.go);
+    const o = e.target.closest("[data-open]");
+    if(o){ open.add(o.dataset.open); render(); const el = root.ownerDocument.querySelector(`.sb[data-id="${o.dataset.open}"]`); if(el) el.scrollIntoView({ block:"start" }); return; }
+    const h = e.target.closest("[data-tog]");
+    if(h){ const id = h.closest(".sb").dataset.id; open.has(id) ? open.delete(id) : open.add(id); return render(); }
+    const a = e.target.closest("[data-act]"); if(!a) return;
+    const g = find(a);
+    if(a.dataset.act === "del"){ if(confirm(`'${g.name}' 항목과 학생 점수를 모두 삭제할까요?`)) mut(() => { list.splice(list.indexOf(g), 1); open.delete(g.id); }); }
+    else if(a.dataset.act === "copy"){
+      const n = grCount(g, roster);
+      const t = [`${g.subj} ${g.name} (${md(g.date)}, 만점 ${g.max})`, ["번호","이름","점수","도달"].join("\t"),
+        ...roster.map(s => { const no = String(s.no), r = grLv(g,no), v = (g.sc || {})[no]; return [no, s.name || "", v ?? "", r.abs ? "중(결석)" : r.lv === "미입력" ? "" : r.lv].join("\t"); }),
+        `상 ${n["상"]}명(${grPct("상",n)}%) · 중 ${n["중"]}명(${grPct("중",n)}%) · 하 ${n["하"]}명(${grPct("하",n)}%)${n["미입력"] ? ` · 미입력 ${n["미입력"]}명` : ""}`].join("\n");
+      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("결과를 복사했습니다"), () => toast("복사하지 못했습니다"));
+    }
+  });
+  root.addEventListener("change", e => {
+    const f = e.target.closest("[data-f]"); if(!f || !f.closest(".sb")) return;
+    const g = find(f), k = f.dataset.f; let v = f.value.trim();
+    if(k === "max"){ v = toNum(v); if(!(v > 0)){ toast("만점을 0보다 큰 숫자로 적어 주세요"); return render(); } }
+    else if(!v) return render();
+    mut(() => { g[k] = v; });
+  });
+  items.filter(g => open.has(g.id)).forEach(g => {
+    if(!roster.length) return;
+    const no = s => String(s.no);
+    new Grid($(`#g-gr-${g.id}`), { id:"gr-" + g.id, rows:() => roster, cols:[
+      { label:"번호", w:48, type:"ro", al:"c", get:no },
+      { label:"이름", w:84, type:"ro", get:s => s.name || "", cls:(s,v) => v ? "lnk" : "", click:s => go("student", { stu:S.students.indexOf(s) }) },
+      { label:"점수", w:72, al:"r", tip:`만점 ${g.max}`, get:s => (g.sc || {})[no(s)] ?? "",
+        set:(s,v) => { g.sc = g.sc || {}; const n = toNum(v); if(n === ""){ if(String(v).trim() !== "") toast("점수는 숫자로 적어 주세요"); delete g.sc[no(s)]; } else { if(n > Number(g.max)) toast(`${no(s)}번 점수가 만점(${g.max})보다 큽니다`); g.sc[no(s)] = n; } } },
+      { label:"결석", w:50, type:"check", al:"c", tip:"그날 결석 — 체크하면 '중'", get:s => !!(g.abs || {})[no(s)], set:(s,v) => { g.abs = g.abs || {}; if(v) g.abs[no(s)] = true; else delete g.abs[no(s)]; } },
+      { label:"도달", w:96, type:"ro", al:"c", get:s => { const r = grLv(g, no(s)); return r.abs ? "중 (결석)" : r.lv === "미입력" ? "" : `${r.lv} · ${fmtPt(Math.floor(r.pct * 10) / 10)}%`; }, cls:s => GR_CLS[grLv(g, no(s)).lv] === "gr-na" ? "" : GR_CLS[grLv(g, no(s)).lv] },
+      { label:"비고", get:s => (g.nt || {})[no(s)] || "", set:(s,v) => { g.nt = g.nt || {}; if(String(v).trim()) g.nt[no(s)] = v; else delete g.nt[no(s)]; } } ]});
+  });
+}
 
 /* ----- 제출물 확인 (기존 Planique 1.x '제출물 확인' 참고) -----
    S.subs = [{ id, date, name, st:{번호:"제출"|"미완성"}, nt:{번호:비고} }] — 상태가 없으면 미제출 */
