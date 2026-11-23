@@ -101,6 +101,8 @@ table.grid{border-collapse:separate;border-spacing:0;width:100%;table-layout:fix
 .grid tr.subst td.ro{color:var(--faint)}
 .grid tr.done td{color:var(--faint)}
 .grid tr.done td.strike{text-decoration:line-through}
+.grid tr.skip td{color:var(--faint);text-decoration:line-through;background:var(--ro)}
+.grid tr.skip td.c,.grid tr.skip td.nostrike{text-decoration:none}
 .grid td.late{background:#efb5a9;color:#5c1d12;font-weight:600}
 .grid td.soon{background:#f5dc9c;color:#573c05;font-weight:600}
 .grid td.p-hi{background:#a9bfd6;color:#1d3247;font-weight:600}
@@ -379,10 +381,14 @@ textarea.memo:focus{border-color:var(--acc)}
    데이터는 이 브라우저(localStorage)에 먼저 저장되고,
    Firebase(Firestore) appState/planique2 문서에 동기화됩니다 (맨 아래 module 스크립트).
    ============================================================ */
-const APP_VERSION = "2.7.1";
+const APP_VERSION = "2.8.0";
 // 버전을 올릴 때 여기에 한 묶음 추가하면 설정 > 패치 노트에 자동으로 나타나고,
 // 이 기기에서 처음 실행된 날짜가 함께 기록됩니다.
 const PATCH_NOTES = [
+  { ver:"2.8.0", date:"2026-11-23", items:[
+    "차시 목록 '선진행' 표시: 진도가 빨리 나가 미리 한 차시를 체크하면 진도·운영 계획 배정에서 빠지고, 차시 목록에는 가운데 줄이 그어진 채로 남음",
+    "여러 줄을 골라 '선진행 표시/해제' 버튼으로 한꺼번에 표시하거나 풀 수 있음 (삭제와 달리 언제든 되돌릴 수 있음)",
+  ]},
   { ver:"2.7.1", date:"2026-11-19", items:[
     "상담 기록에 '대상'(학생/학부모) 칸 추가 — 비워 두면 주제에 학부모·보호자가 있는지로 자동 판단 (흐린 글씨)",
     "상담 횟수를 학생 상담·학부모 상담으로 나눠 표시: 학생 명단 '기록' 열, 학생 세부 기록, 상담 표 제목, 달력 점, 기록 복사",
@@ -909,7 +915,7 @@ function C(){
   c.days = [];
   for(let d = S.set.semStart; d <= S.set.semEnd; d = addDays(d,1)){ const w = pd(d).getDay(); if(w !== 0 && w !== 6 && !c.hol.has(d)) c.days.push(d); }
   c.daySet = new Set(c.days);
-  c.plan = new Map(); c.assign = new Map(); c.rows = [];
+  c.plan = new Map(); c.assign = new Map(); c.rows = []; c.live = {};
   c.hours = new Map(S.subjects.map(s => [s.name, { done:0, planned:0, sub:0 }]));
   c.unfilled = 0; c.subDays = 0;
   const cnt = {};
@@ -926,7 +932,9 @@ function C(){
       let auto = { unit:"", content:"", pages:"", assess:"", note:"" };
       if(d >= S.set.planStart){
         const i = cnt[ab] = (cnt[ab] || 0) + 1;
-        const item = (S.lessons[ab] || [])[i-1];
+        // '선진행' 표시한 차시는 건너뛰고 배정 (차시 목록에는 줄 그어 남김)
+        const live = c.live[ab] || (c.live[ab] = (S.lessons[ab] || []).filter(l => !l.skip));
+        const item = live[i-1];
         if(item){ auto = item; c.assign.set(item, { date:d, p }); }
         else auto = { unit:"", content:c.fb.get(ab) || "", pages:"", assess:"", note:"" };
       }
@@ -1424,19 +1432,20 @@ function pgLessons(){
   if(!c.abbr.has(ui.lessonAbbr)) ui.lessonAbbr = S.abbrs[0] ? S.abbrs[0].abbr : "";
   const ab = ui.lessonAbbr, list = S.lessons[ab] || (S.lessons[ab] = []);
   let used = 0; list.forEach(l => { if(c.assign.has(l)) used++; });
+  const skipped = list.filter(l => l.skip).length;
   const subj = c.abbr.get(ab), h = hoursTable().rows.find(r => r.s.name === subj);
   V().innerHTML = `<div class="page-head"><h1>차시 목록</h1><span class="desc">위에서부터 차례로 수업에 배정됩니다 (${md(S.set.planStart)} 수업부터). 줄을 넣거나 빼거나 순서를 바꾸면 진도가 따라 바뀝니다.</span></div>
     <div class="tabs" id="ltabs">${S.abbrs.filter(a => a.abbr).map(a => `<button data-k="${esc(a.abbr)}" class="${a.abbr === ab ? "on" : ""}">${esc(a.abbr)}<i>${(S.lessons[a.abbr] || []).length || ""}</i></button>`).join("")}</div>
     <div class="row" style="margin-bottom:8px">
-      <button class="btn" id="add">행 추가</button><button class="btn" id="up">위로</button><button class="btn" id="down">아래로</button><button class="btn danger" id="del">선택 행 삭제</button>
-      <span class="meta sp" style="margin-left:auto">${esc(subj || "")} · 목록 ${list.length}차시 중 ${used}차시 배정${h ? ` · 남은 시수 ${h.remain}` : ""}</span>
+      <button class="btn" id="add">행 추가</button><button class="btn" id="up">위로</button><button class="btn" id="down">아래로</button><button class="btn" id="skip" title="선진행: 진도가 빨리 나가 미리 한 차시. 진도·운영 계획에서 빠지고 여기엔 줄 그어 남음">선진행 표시/해제</button><button class="btn danger" id="del">선택 행 삭제</button>
+      <span class="meta sp" style="margin-left:auto">${esc(subj || "")} · 목록 ${list.length}차시 중 ${used}차시 배정${skipped ? ` · 선진행 ${skipped}` : ""}${h ? ` · 남은 시수 ${h.remain}` : ""}</span>
     </div>
     <div id="g-les"></div>
     <p class="hint">구글 시트 '차시 목록' 탭에서 약어~비고 열(A:G)을 복사해 여기에 붙여넣으면 과목별로 한꺼번에 들어옵니다. 우클릭으로도 행을 추가·삭제할 수 있습니다.</p>`;
   $("#ltabs").onclick = e => { const b = e.target.closest("button"); if(b){ ui.lessonAbbr = b.dataset.k; delete gridSel.les; delete gridScroll.les; render(); } };
   const mk = () => ({ unit:"", content:"", pages:"", assess:"", note:"" });
   const g = new Grid($("#g-les"), { id:"les", maxH:Math.max(320, innerHeight-290), ...src(list,mk),
-    rowCls:l => c.assign.has(l) && c.assign.get(l).date < TODAY ? "done" : "",
+    rowCls:l => l.skip ? "skip" : c.assign.has(l) && c.assign.get(l).date < TODAY ? "done" : "",
     paste:m => {
       if(!(m.length && m.every(r => r.length >= 4 && c.abbr.has(r[0].trim()) && /^\d*$/.test(r[1].trim())))) return false;
       const by = {}; m.forEach(r => (by[r[0].trim()] = by[r[0].trim()] || []).push({ unit:(r[2]||"").trim(), content:(r[3]||"").trim(), pages:(r[4]||"").trim(), assess:(r[5]||"").trim(), note:(r[6]||"").trim() }));
@@ -1444,10 +1453,13 @@ function pgLessons(){
       if(confirm(`${names.join(", ")} 과목의 차시 목록을 붙여넣은 ${m.length}줄로 바꿀까요?`)) names.forEach(a => S.lessons[a] = by[a]);
       return true;
     },
-    cols:[ { label:"순번", w:46, type:"ro", al:"c", get:l => list.indexOf(l)+1 }, { key:"unit", label:"단원", w:220 }, { key:"content", label:"학습 내용" }, { key:"pages", label:"교과서 쪽수", w:90 }, { key:"assess", label:"평가", w:230, cls:(l,v) => v ? "as" : "" }, { key:"note", label:"비고", w:190 },
-      { label:"배정", w:110, type:"ro", get:l => { const a = c.assign.get(l); return a ? `${md(a.date)} ${a.p}교시` : ""; } } ]});
+    cols:[ { label:"순번", w:46, type:"ro", al:"c", get:l => list.indexOf(l)+1 },
+      { key:"skip", label:"선진행", tip:"선진행 — 미리 한 차시. 체크하면 진도·운영 계획에서 빠지고 여기엔 줄 그어 남음", w:58, type:"check", al:"c" },
+      { key:"unit", label:"단원", w:220 }, { key:"content", label:"학습 내용" }, { key:"pages", label:"교과서 쪽수", w:90 }, { key:"assess", label:"평가", w:230, cls:(l,v) => v ? "as" : "" }, { key:"note", label:"비고", w:190 },
+      { label:"배정", w:110, type:"ro", cls:l => l.skip ? "nostrike" : "", get:l => { if(l.skip) return "선진행"; const a = c.assign.get(l); return a ? `${md(a.date)} ${a.p}교시` : ""; } } ]});
+  $("#skip").onclick = () => { const r = sel(), rows = list.slice(r.r0, r.r1+1); if(!rows.length) return toast("표에서 차시를 먼저 고르세요"); const on = !rows.every(l => l.skip); mut(() => rows.forEach(l => { if(on) l.skip = true; else delete l.skip; })); toast(on ? `${rows.length}차시를 '선진행'으로 표시했습니다` : `${rows.length}차시 표시를 풀었습니다`); };
   const sel = () => g.range();
-  $("#add").onclick = () => mut(() => { const r = sel(); list.splice(Math.min(list.length, r.r1+1), 0, mk()); gridSel.les = { r:r.r1+1, c:1, ar:r.r1+1, ac:1 }; activeGridId = "les"; });
+  $("#add").onclick = () => mut(() => { const r = sel(); list.splice(Math.min(list.length, r.r1+1), 0, mk()); gridSel.les = { r:r.r1+1, c:2, ar:r.r1+1, ac:2 }; activeGridId = "les"; });
   $("#del").onclick = () => { const r = sel(), n = Math.min(r.r1, list.length-1) - r.r0 + 1; if(n > 0) mut(() => list.splice(r.r0, n)); };
   const move = dir => { const r = sel(); if(r.r1 >= list.length) return; if(dir < 0 ? r.r0 === 0 : r.r1 >= list.length-1) return; mut(() => { const part = list.splice(r.r0, r.r1-r.r0+1); list.splice(r.r0+dir, 0, ...part); gridSel.les = { r:g.r+dir, c:g.c, ar:g.ar+dir, ac:g.ac }; activeGridId = "les"; }); };
   $("#up").onclick = () => move(-1); $("#down").onclick = () => move(1);
