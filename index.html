@@ -341,6 +341,7 @@ textarea.memo:focus{border-color:var(--acc)}
 @media (max-width:640px){ .gr-bar{width:70px} .gr-add{flex-wrap:wrap} .gr-add #grName{flex:1 1 100%} }
 @media (max-width:640px){ .sb-bar{display:none} .sb-c{margin-left:0;flex-basis:100%;padding-left:20px} .sb-tool input[data-f=name]{width:150px} }
 /* 학급운영비 */
+.stats small.att-sub{display:block;font-size:11px;color:var(--mute);margin-top:1px}
 .stats b.neg{color:var(--red)} .stats b.pos{color:var(--acc)}
 .bd-two{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}
 @media (max-width:1080px){ .bd-two{grid-template-columns:1fr} }
@@ -896,12 +897,19 @@ function load(){
   if(!S || !S.set) S = seedState();
   S.meta = S.meta || { versions:[] };
   S.notes = S.notes || []; S.subs = S.subs || [];
+  if(fixAtt()) save();
   if(!S.meta.lessonSeed){ // 2.0.1: 손대지 않은 과목만 시트 전체 차시 목록으로 채움
     const full = seedLessons();
     for(const ab in full){ const cur = S.lessons[ab] || []; if(cur.length <= (OLD_SEED_LEN[ab] || 0) && !(ab === "영" && cur.length)) S.lessons[ab] = full[ab]; }
     S.meta.lessonSeed = 1; save();
   }
   if(!S.meta.versions.some(v => v.ver === APP_VERSION)){ S.meta.versions.push({ ver:APP_VERSION, firstRun:TODAY }); save(); }
+}
+/* 예전 출결 구분 '체험학습'은 결석 + 출석인정으로 옮김 (비고 앞에 '체험학습'). 바뀐 게 있으면 true */
+function fixAtt(){
+  let n = 0;
+  (S.attendance || []).forEach(a => { if(a.type === "체험학습"){ a.type = "결석"; a.sub = a.sub || "출석인정"; a.memo = ["체험학습", a.memo].filter(Boolean).join(" "); n++; } });
+  return n > 0;
 }
 function save(){
   const json = JSON.stringify(S);
@@ -917,7 +925,7 @@ window.Planique = {
     let d; try { d = JSON.parse(json); } catch(e){ return false; }
     if(!d || !d.set) return false;
     undoStack.push(JSON.stringify(S)); if(undoStack.length > 40) undoStack.shift();
-    S = d; S.meta = S.meta || { versions:[] }; S.notes = S.notes || []; S.subs = S.subs || [];
+    S = d; S.meta = S.meta || { versions:[] }; S.notes = S.notes || []; S.subs = S.subs || []; fixAtt();
     if(!S.meta.versions.some(v => v.ver === APP_VERSION)) S.meta.versions.push({ ver:APP_VERSION, firstRun:TODAY });
     try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){}
     render(); return true;
@@ -1384,7 +1392,7 @@ function dayPanel(){
   if(todos.length) h += `<div class="lbl">챙길 일</div><ul class="pl">${todos.map(t => `<li class="chk${isDone(t) ? " done" : ""}" data-id="${t.id}"><i class="cb${isDone(t) ? " on" : ""}"></i><span>${esc(t.title)}</span></li>`).join("")}</ul>`;
   const evs = [...eventsOn(d).map(e => e.title + (e.period ? ` · ${e.period}` : "")), ...(c.trn.get(d) || []).map(t => `${t.kind || "연수"} · ${t.title}${t.org ? ` (${t.org})` : ""}`)];
   if(evs.length) h += `<div class="lbl">일정</div><ul class="pl">${evs.map(e => `<li><span>${esc(e)}</span></li>`).join("")}</ul>`;
-  const st = [...(c.att.get(d) || []).map(a => `<li><i class="dot att"></i><span>${esc(a.no)}번 ${esc(stuName(a.no))} ${esc(a.type || "")} ${esc(a.memo || "")}</span></li>`), ...(c.cns.get(d) || []).map(a => `<li><i class="dot cns"></i><span>${esc(a.no)}번 ${esc(stuName(a.no))} ${cnsWho(a) === "학부모" ? "학부모 상담" : "상담"} · ${esc(a.topic || "")}</span></li>`), ...(c.nts.get(d) || []).map(a => `<li><i class="dot nts"></i><span>${esc(a.no)}번 ${esc(stuName(a.no))} ${esc(a.cat || "특이사항")} · ${esc(a.content || "")}</span></li>`)];
+  const st = [...(c.att.get(d) || []).map(a => `<li><i class="dot att"></i><span>${esc(a.no)}번 ${esc(stuName(a.no))} ${esc(attLabel(a))} ${esc(a.memo || "")}</span></li>`), ...(c.cns.get(d) || []).map(a => `<li><i class="dot cns"></i><span>${esc(a.no)}번 ${esc(stuName(a.no))} ${cnsWho(a) === "학부모" ? "학부모 상담" : "상담"} · ${esc(a.topic || "")}</span></li>`), ...(c.nts.get(d) || []).map(a => `<li><i class="dot nts"></i><span>${esc(a.no)}번 ${esc(stuName(a.no))} ${esc(a.cat || "특이사항")} · ${esc(a.content || "")}</span></li>`)];
   if(st.length) h += `<div class="lbl">학생</div><ul class="pl">${st.join("")}</ul>`;
   h += `<div class="lbl">하루 메모</div><textarea class="memo" id="dp-memo" placeholder="할 일과 별개로, 그날 적어 둘 것">${esc(S.dayMemos[d] || "")}</textarea>`;
   const el = $("#dp"); el.innerHTML = h;
@@ -1421,14 +1429,21 @@ function pgDay(){
   if(school) new Grid($("#g-day"), { id:"day", rows:() => Array.from({ length:NP }, (_,i) => ({ date:d, p:i+1 })), cols:progCols(false) });
   new Grid($("#g-dev"), { id:"dayEv", ...src(S.events, () => ({ date:d, end:"", title:"", period:"", memo:"" }), e => e.end ? (d >= e.date && d <= e.end) : e.date === d), cols:[
     { key:"title", label:"일정" }, { key:"period", label:"교시·시간", w:96 }, { key:"memo", label:"메모", w:110 } ]});
-  new Grid($("#g-datt"), { id:"dayAtt", ...src(S.attendance, () => ({ date:d, no:"", type:"", memo:"" }), a => a.date === d), empty:emptyBy("no","type","memo"), cols:[
-    COL_NO, COL_NAME, { key:"type", label:"구분", w:84, list:ATT_TYPES }, { key:"memo", label:"사유·메모" } ]});
+  new Grid($("#g-datt"), { id:"dayAtt", ...src(S.attendance, () => ({ date:d, no:"", type:"", sub:"", memo:"" }), a => a.date === d), empty:emptyBy("no","type","sub","memo"), cols:[
+    COL_NO, COL_NAME, ...attCols(58, 72) ]});
   new Grid($("#g-dcns"), { id:"dayCns", ...src(S.counsels, () => ({ date:d, no:"", topic:"", content:"" }), a => a.date === d), empty:emptyBy("no","topic","content"), cols:[
     COL_NO, COL_NAME, COL_WHO, { key:"topic", label:"주제", w:100 }, { key:"content", label:"내용" } ]});
   new Grid($("#g-dnts"), { id:"dayNts", ...src(S.notes, () => ({ date:d, no:"", cat:"", content:"" }), a => a.date === d), empty:emptyBy("no","cat","content"), cols:[
     COL_NO, COL_NAME, { key:"cat", label:"분류", w:84, list:NOTE_CATS }, { key:"content", label:"내용" } ]});
 }
-const ATT_TYPES = ["결석","지각","조퇴","결과","체험학습","기타"];
+/* 출결: 구분(결석·지각·조퇴·결과)을 먼저 고르고, 세부(질병·미인정·기타·출석인정)를 고름 */
+const ATT_TYPES = ["결석","지각","조퇴","결과"];
+const ATT_SUBS = ["질병","미인정","기타","출석인정"];
+const attLabel = a => a.type && a.sub ? a.sub + a.type : (a.type || a.sub || "");   // 예: 질병결석, 미인정지각
+const attCols = (wType, wSub) => [
+  { key:"type", label:"구분", w:wType, list:ATT_TYPES, tip:"결석 · 지각 · 조퇴 · 결과", cls:(r,v) => v && !ATT_TYPES.includes(v) ? "bad" : "" },
+  { key:"sub", label:"세부", w:wSub, list:ATT_SUBS, tip:"질병 · 미인정 · 기타 · 출석인정", cls:(r,v) => v && (!ATT_SUBS.includes(v) || !r.type) ? "bad" : "" },
+  { key:"memo", label:"비고" } ];
 
 /* ----- 시간표 ----- */
 function monthsOfTerm(){ const out = [], seen = new Set(); C().days.forEach(d => { const k = d.slice(0,7); if(!seen.has(k)){ seen.add(k); out.push(k); } }); return out; }
@@ -1647,7 +1662,7 @@ function pgStudents(){
     { label:"안 낸 것", w:70, type:"ro", al:"c", tip:"제출물 중 미제출·미완성 수", get:s => { if(s.no === "" || s.no == null) return ""; const k = subLeft(String(s.no)).length; return k ? k + "건" : ""; }, cls:(s,v) => v ? "neg" : "" } ]});
   $("#stuSort").onclick = () => mut(() => S.students.sort((a,b) => (Number(a.no) || 1e9) - (Number(b.no) || 1e9)));
   $("#stuDel").onclick = () => { const r = gs.range(), rows = S.students.slice(r.r0, r.r1+1); if(!rows.length) return; if(confirm(`${rows.map(s => (s.no ? s.no + "번 " : "") + (s.name || "")).join(", ")} — 명단에서 삭제할까요?\n(출결·상담 기록은 남습니다)`)) mut(() => { S.students = S.students.filter(s => !rows.includes(s)); }); };
-  new Grid($("#g-att"), { id:"att", maxH:h, ...src(S.attendance, () => ({ date:"", no:"", type:"", memo:"" })), empty:emptyBy("date","no","type","memo"), cols:[ { key:"date", label:"날짜", w:90, type:"date" }, COL_NO, COL_NAME, { key:"type", label:"구분", w:80, list:ATT_TYPES }, { key:"memo", label:"사유·메모" } ]});
+  new Grid($("#g-att"), { id:"att", maxH:h, ...src(S.attendance, () => ({ date:"", no:"", type:"", sub:"", memo:"" })), empty:emptyBy("date","no","type","sub","memo"), cols:[ { key:"date", label:"날짜", w:90, type:"date" }, COL_NO, COL_NAME, ...attCols(62, 76) ]});
   new Grid($("#g-cns"), { id:"cns", maxH:h, ...src(S.counsels, () => ({ date:"", no:"", topic:"", content:"" })), empty:emptyBy("date","no","topic","content"), cols:[ { key:"date", label:"날짜", w:90, type:"date" }, COL_NO, COL_NAME, COL_WHO, { key:"topic", label:"주제", w:120 }, { key:"content", label:"내용" } ]});
   new Grid($("#g-nts"), { id:"nts", maxH:h, ...src(S.notes, () => ({ date:"", no:"", cat:"", content:"" })), empty:emptyBy("date","no","cat","content"), cols:[ { key:"date", label:"날짜", w:90, type:"date" }, COL_NO, COL_NAME, { key:"cat", label:"분류", w:90, list:NOTE_CATS }, { key:"content", label:"내용" } ]});
 }
@@ -1658,7 +1673,8 @@ function pgStudent(){
   if(!s){ ui.page = "students"; pgStudents(); return; }
   const no = String(s.no ?? ""), mine = r => no !== "" && String(r.no) === no;
   const att = S.attendance.filter(mine), cns = S.counsels.filter(mine), nts = S.notes.filter(mine);
-  const cnt = {}; att.forEach(a => { const k = a.type || "기타"; cnt[k] = (cnt[k] || 0) + 1; });
+  const cnt = {}, sub = {}; att.forEach(a => { const k = a.type || "기타"; cnt[k] = (cnt[k] || 0) + 1; if(a.sub){ const m = sub[k] = sub[k] || {}; m[a.sub] = (m[a.sub] || 0) + 1; } });
+  const attSplit = k => sub[k] ? ATT_SUBS.concat(Object.keys(sub[k]).filter(x => !ATT_SUBS.includes(x))).filter(x => sub[k][x]).map(x => `${x} ${sub[k][x]}`).join(" · ") : "";
   const key = no.replace(/\W/g,"");
   const todos = S.todos.filter(t => t.title && ((key && new RegExp(`(^|\\D)${key}번`).test(t.title)) || (s.name && t.title.includes(s.name))));
   const order = S.students.map((x,i) => i).filter(i => S.students[i].name || S.students[i].no).sort((a,b) => (Number(S.students[a].no) || 1e9) - (Number(S.students[b].no) || 1e9));
@@ -1669,8 +1685,8 @@ function pgStudent(){
       <div class="row sp"><button class="btn" id="copy">기록 복사</button><button class="btn" id="prev">‹ 이전 학생</button><button class="btn" id="next">다음 학생 ›</button></div>
     </div>
     <div class="stats">
-      ${["결석","지각","조퇴"].map(k => `<div><b>${cnt[k] || 0}</b>${k}</div>`).join("")}
-      <div><b>${att.length - (cnt["결석"] || 0) - (cnt["지각"] || 0) - (cnt["조퇴"] || 0)}</b>그 밖의 출결</div><div><b>${cnsSplit(cns).s}</b>학생 상담</div><div><b>${cnsSplit(cns).p}</b>학부모 상담</div><div><b>${nts.length}</b>특이사항</div>
+      ${ATT_TYPES.map(k => `<div title="${esc(attSplit(k))}"><b>${cnt[k] || 0}</b>${k}${attSplit(k) ? `<small class="att-sub">${esc(attSplit(k))}</small>` : ""}</div>`).join("")}
+      ${att.length - ATT_TYPES.reduce((s,k) => s + (cnt[k] || 0), 0) ? `<div><b>${att.length - ATT_TYPES.reduce((s,k) => s + (cnt[k] || 0), 0)}</b>그 밖의 출결</div>` : ""}<div><b>${cnsSplit(cns).s}</b>학생 상담</div><div><b>${cnsSplit(cns).p}</b>학부모 상담</div><div><b>${nts.length}</b>특이사항</div>
       ${S.subs.length && no ? `<div><b class="${subLeft(no).length ? "neg" : ""}">${subLeft(no).length}</b>안 낸 제출물</div>` : ""}
     </div>
     <div class="two" style="grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr)">
@@ -1697,7 +1713,7 @@ function pgStudent(){
     const sec = (title,rows) => rows.length ? `\n[${title}]\n` + rows.join("\n") : "";
     const by = (a,b) => (a.date || "") < (b.date || "") ? -1 : 1;
     const text = `${no ? no + "번 " : ""}${s.name || ""}` + (s.memo ? `\n메모: ${s.memo}` : "")
-      + sec("출결", att.slice().sort(by).map(a => `${fmtMD(a.date)} ${a.type || ""} ${a.memo || ""}`.trim()))
+      + sec("출결", att.slice().sort(by).map(a => `${fmtMD(a.date)} ${attLabel(a)} ${a.memo || ""}`.trim()))
       + sec(`상담 (${cnsSplitTxt(cns)})`, cns.slice().sort(by).map(a => `${fmtMD(a.date)} [${cnsWho(a)}] ${a.topic || ""}${a.content ? " — " + a.content : ""}`.trim()))
       + sec("특이사항", nts.slice().sort(by).map(a => `${fmtMD(a.date)} ${a.cat ? "(" + a.cat + ") " : ""}${a.content || ""}`.trim()))
       + sec("안 낸 제출물", subLeft(no).map(sb => `${fmtMD(sb.date)} ${sb.name} — ${subGet(sb,no)}${(sb.nt || {})[no] ? " (" + sb.nt[no] + ")" : ""}`));
@@ -1706,7 +1722,7 @@ function pgStudent(){
   const info = [["no","번호"],["name","이름"],["memo","메모"]].map(([k,label]) => ({ k, label }));
   new Grid($("#g-info"), { id:"stuInfo", rows:() => info, cols:[ { label:"항목", w:64, type:"ro", get:r => r.label }, { label:"내용", get:r => s[r.k], set:(r,v) => { if(r.k === "no") setStuNo(s,v); else s[r.k] = v; } } ]});
   if(no === "") return;
-  new Grid($("#g-satt"), { id:"sAtt", maxH:260, ...src(S.attendance, () => ({ date:"", no, type:"", memo:"" }), mine), empty:emptyBy("date","type","memo"), cols:[ { key:"date", label:"날짜", w:96, type:"date" }, { key:"type", label:"구분", w:90, list:ATT_TYPES }, { key:"memo", label:"사유·메모" } ]});
+  new Grid($("#g-satt"), { id:"sAtt", maxH:260, ...src(S.attendance, () => ({ date:"", no, type:"", sub:"", memo:"" }), mine), empty:emptyBy("date","type","sub","memo"), cols:[ { key:"date", label:"날짜", w:96, type:"date" }, ...attCols(70, 84) ]});
   new Grid($("#g-scns"), { id:"sCns", maxH:300, ...src(S.counsels, () => ({ date:"", no, topic:"", content:"" }), mine), empty:emptyBy("date","topic","content"), cols:[ { key:"date", label:"날짜", w:96, type:"date" }, COL_WHO, { key:"topic", label:"주제", w:150 }, { key:"content", label:"내용" } ]});
   new Grid($("#g-snts"), { id:"sNts", maxH:300, ...src(S.notes, () => ({ date:"", no, cat:"", content:"" }), mine), empty:emptyBy("date","cat","content"), cols:[ { key:"date", label:"날짜", w:96, type:"date" }, { key:"cat", label:"분류", w:90, list:NOTE_CATS }, { key:"content", label:"내용" } ]});
 }
@@ -1912,7 +1928,8 @@ function importOld(obj){
         const r = day[id], s = byId.get(id);
         if(!r || !s || !r.status || r.status === "출석") return;
         const per = Array.isArray(r.periods) && r.periods.length ? r.periods.slice().sort((a,b) => a-b).join("·") + "교시" : "";
-        const o = { date, no:no(s), type:r.status, memo:[r.subType, per, r.note].filter(Boolean).join(" ") };
+        const st0 = r.status === "체험학습" ? "결석" : r.status, sb = r.status === "체험학습" ? "출석인정" : r.subType === "인정" ? "출석인정" : ATT_SUBS.includes(r.subType) ? r.subType : "";
+        const o = { date, no:no(s), type:st0, sub:sb, memo:[r.status === "체험학습" && "체험학습", !sb && r.subType, per, r.note].filter(Boolean).join(" ") };
         if(!has(S.attendance,o)){ S.attendance.push(o); n[1]++; }
       });
     });
@@ -2286,7 +2303,7 @@ function pgSettings(){
     const msg = await window.PlaniqueCloud.changePin(cur, n1);
     toast(msg); if(msg.startsWith("PIN을 바꿨")) e.target.reset();
   };
-  $("#file").onchange = e => { const f = e.target.files[0]; if(!f) return; f.text().then(t => { try { const d = JSON.parse(t); if(!d.set || !d.tt) throw 0; mut(() => { S = d; S.meta = S.meta || { versions:[] }; S.notes = S.notes || []; S.subs = S.subs || []; }); toast("백업을 불러왔습니다"); } catch(err){ toast("Planique 백업 파일이 아닙니다"); } }); };
+  $("#file").onchange = e => { const f = e.target.files[0]; if(!f) return; f.text().then(t => { try { const d = JSON.parse(t); if(!d.set || !d.tt) throw 0; mut(() => { S = d; S.meta = S.meta || { versions:[] }; S.notes = S.notes || []; S.subs = S.subs || []; fixAtt(); }); toast("백업을 불러왔습니다"); } catch(err){ toast("Planique 백업 파일이 아닙니다"); } }); };
   $("#reset").onclick = () => { if(confirm("지금까지 입력한 내용을 지우고 처음 상태(시트 기준 자료)로 돌릴까요?")) mut(() => { const v = S.meta; S = seedState(); S.meta = v; S.notes = []; S.subs = []; }); };
 }
 
